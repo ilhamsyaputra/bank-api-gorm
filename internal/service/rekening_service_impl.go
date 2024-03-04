@@ -17,11 +17,10 @@ import (
 )
 
 type RekeningServiceImpl struct {
-	rekeningRepository  repository.RekeningRepository
-	transaksiRepository repository.TransaksiRepository
-	validate            *validator.Validate
-	log                 *logger.Logger
-	db                  *gorm.DB
+	rekeningRepository repository.RekeningRepository
+	validate           *validator.Validate
+	log                *logger.Logger
+	db                 *gorm.DB
 }
 
 func InitRekeningRepositoryImpl(db *gorm.DB, repo repository.RekeningRepository, validator *validator.Validate, logger *logger.Logger) RekeningService {
