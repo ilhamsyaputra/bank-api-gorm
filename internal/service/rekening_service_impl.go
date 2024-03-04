@@ -76,9 +76,15 @@ func (service *RekeningServiceImpl) Tabung(rekening request.TabungRequest) (resp
 		return
 	}
 
+	saldo, err := service.rekeningRepository.GetSaldo(rekening_)
+	if err != nil {
+		helper.ServiceError(err, service.log)
+		return
+	}
+
 	defer service.log.Info(logrus.Fields{}, nil, "TRANSAKSI TABUNG END")
 
-	return response.TabungResponse{Saldo: 0.0}, nil
+	return response.TabungResponse{Saldo: saldo}, nil
 }
 
 func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp response.TarikResponse, err error) {
