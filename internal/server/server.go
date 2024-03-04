@@ -21,6 +21,7 @@ func (s *Server) Start() {
 	routes := app.Group("/v1")
 	routes.Post("/daftar", s.controller.Daftar)
 	routes.Post("/tabung", s.controller.Tabung)
+	routes.Post("/tarik", s.controller.Tarik)
 
 	err := app.Listen(":2525")
 	if err != nil {

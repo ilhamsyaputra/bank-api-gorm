@@ -80,3 +80,69 @@ func (service *RekeningServiceImpl) Tabung(rekening request.TabungRequest) (resp
 
 	return response.TabungResponse{Saldo: 0.0}, nil
 }
+
+func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp response.TarikResponse, err error) {
+	service.log.Info(logrus.Fields{}, rekening, "TRANSAKSI TARIK START")
+	err = service.validate.Struct(rekening)
+	if err != nil {
+		service.log.Info(logrus.Fields{"error": err.Error()}, rekening, "ERROR on Daftar()")
+		return
+	}
+
+	tx := service.db.Begin()
+
+	defer helper.TransactionStatusHandler(tx, &err, service.log)
+
+	rekening_ := entity.Rekening{
+		NoRekening: rekening.NoRekening,
+	}
+
+	err = service.rekeningRepository.CheckRekening(rekening_)
+	if err == gorm.ErrRecordNotFound {
+		err = fmt.Errorf("nomor rekening tidak valid")
+		helper.ServiceError(err, service.log)
+		return
+	}
+
+	saldo, err := service.rekeningRepository.GetSaldo(rekening_)
+	if err != nil {
+		helper.ServiceError(err, service.log)
+		return
+	}
+
+	if rekening.Nominal > saldo {
+		err = fmt.Errorf("saldo tidak mencukupi untuk melakukan transaksi tarik")
+		helper.ServiceError(err, service.log)
+		return
+	}
+
+	err = service.rekeningRepository.UpdateSaldo(rekening_, -rekening.Nominal)
+	if err != nil {
+		helper.ServiceError(err, service.log)
+		return
+	}
+
+	transaksi_ := entity.Transaksi{
+		Id:               uuid.New(),
+		NoRekeningAsal:   rekening.NoRekening,
+		NoRekeningTujuan: rekening.NoRekening,
+		TipeTransaksi:    enum.TipeTransaksi.Debit,
+		Nominal:          rekening.Nominal,
+	}
+
+	err = service.rekeningRepository.CatatTransaksi(transaksi_)
+	if err != nil {
+		helper.ServiceError(err, service.log)
+		return
+	}
+
+	saldo, err = service.rekeningRepository.GetSaldo(rekening_)
+	if err != nil {
+		helper.ServiceError(err, service.log)
+		return
+	}
+
+	defer service.log.Info(logrus.Fields{}, nil, "TRANSAKSI TARIK END")
+
+	return response.TarikResponse{Saldo: saldo}, nil
+}

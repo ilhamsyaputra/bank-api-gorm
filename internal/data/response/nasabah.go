@@ -7,3 +7,7 @@ type DaftarResponse struct {
 type TabungResponse struct {
 	Saldo float64
 }
+
+type TarikResponse struct {
+	Saldo float64
+}

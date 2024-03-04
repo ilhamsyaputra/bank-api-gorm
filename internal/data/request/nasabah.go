@@ -12,3 +12,8 @@ type TabungRequest struct {
 	NoRekening string  `json:"no_rekening"`
 	Nominal    float64 `json:"nominal"`
 }
+
+type TarikRequest struct {
+	NoRekening string  `json:"no_rekening"`
+	Nominal    float64 `json:"nominal"`
+}

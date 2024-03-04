@@ -38,6 +38,12 @@ func (r *RekeningRepositoryImpl) UpdateSaldo(rekening entity.Rekening, nominal f
 	return r.db.Save(&rekening).Error
 }
 
+func (r *RekeningRepositoryImpl) GetSaldo(rekening entity.Rekening) (saldo float64, err error) {
+	err = r.db.First(&rekening).Error
+	saldo = rekening.Saldo
+	return
+}
+
 func (r *RekeningRepositoryImpl) CatatTransaksi(transaksi entity.Transaksi) error {
 	return r.TransaksiRepository.CatatTransaksi(transaksi)
 }

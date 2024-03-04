@@ -7,6 +7,7 @@ type RekeningRepository interface {
 
 	CheckRekening(rekening entity.Rekening) error
 	UpdateSaldo(rekening entity.Rekening, nominal float64) error
+	GetSaldo(rekening entity.Rekening) (float64, error)
 
 	// transaksi
 	CatatTransaksi(transaksi entity.Transaksi) error

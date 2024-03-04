@@ -49,3 +49,31 @@ func (controller *RekeningController) Tabung(ctx *fiber.Ctx) error {
 
 	return ctx.Status(http.StatusOK).JSON(response_)
 }
+
+func (controller *RekeningController) Tarik(ctx *fiber.Ctx) error {
+	request_ := request.TarikRequest{}
+	response_ := response.Response{}
+
+	err := ctx.BodyParser(&request_)
+	helper.ControllerErrorHelper(ctx, err, controller.logger)
+
+	resp, err := controller.rekeningService.Tarik(request_)
+
+	if err != nil {
+		response_ = response.Response{
+			Code:   http.StatusBadRequest,
+			Status: "error",
+			Remark: err.Error(),
+		}
+		return ctx.Status(http.StatusBadRequest).JSON(response_)
+	}
+
+	response_ = response.Response{
+		Code:   http.StatusCreated,
+		Status: "success",
+		Remark: "transaksi tarik berhasil",
+		Data:   resp,
+	}
+
+	return ctx.Status(http.StatusOK).JSON(response_)
+}
