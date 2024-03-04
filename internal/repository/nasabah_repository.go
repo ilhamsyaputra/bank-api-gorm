@@ -11,6 +11,7 @@ type NasabahRepository interface {
 
 	// rekening
 	DaftarRekening(rekening entity.Rekening) error
+	CheckRekening(rekening entity.Rekening) error
 
 	// counter
 	GetNoNasabah() string

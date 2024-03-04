@@ -7,3 +7,8 @@ type DaftarRequest struct {
 	Pin        string `json:"pin"`
 	KodeCabang string `json:"kode_cabang"`
 }
+
+type TabungRequest struct {
+	NoRekening string  `json:"no_rekening"`
+	Nominal    float64 `json:"nominal"`
+}

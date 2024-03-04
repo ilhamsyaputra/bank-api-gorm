@@ -51,3 +51,7 @@ func (r *NasabahRepositoryImpl) UpdateNoRekening(tx *gorm.DB) error {
 func (r *NasabahRepositoryImpl) DaftarRekening(rekening entity.Rekening) error {
 	return r.RekeningRepository.Daftar(rekening)
 }
+
+func (r *NasabahRepositoryImpl) CheckRekening(rekening entity.Rekening) error {
+	return r.RekeningRepository.CheckRekening(rekening)
+}

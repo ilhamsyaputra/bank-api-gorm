@@ -7,12 +7,15 @@ import (
 
 type Controller struct {
 	NasabahController
+	RekeningController
 }
 
-func InitController(service service.NasabahService, logger *logger.Logger) *Controller {
+func InitController(service *service.Service, logger *logger.Logger) *Controller {
 	nasabahController := InitNasabahController(service, logger)
+	rekeningController := InitRekeningController(service, logger)
 
 	return &Controller{
-		NasabahController: *nasabahController,
+		NasabahController:  *nasabahController,
+		RekeningController: *rekeningController,
 	}
 }

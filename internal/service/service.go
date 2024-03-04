@@ -7,6 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
+type Services struct {
+	Nasabah  NasabahService
+	Rekening RekeningService
+}
+
 type Service struct {
 	repository *repository.Repository
 	validator  *validator.Validate
@@ -14,10 +19,12 @@ type Service struct {
 	db         *gorm.DB
 
 	NasabahService
+	RekeningService
 }
 
 func InitService(db *gorm.DB, repository *repository.Repository, logger *logger.Logger) *Service {
-	nasabahService := InitNasabahRepositoryImpl(db, repository, validator.New(), logger)
+	nasabahService := InitNasabahRepositoryImpl(db, repository.NasabahRepository, validator.New(), logger)
+	rekeningService := InitRekeningRepositoryImpl(db, repository.RekeningRepository, validator.New(), logger)
 
 	return &Service{
 		repository: repository,
@@ -25,6 +32,7 @@ func InitService(db *gorm.DB, repository *repository.Repository, logger *logger.
 		logger:     logger,
 		db:         db,
 
-		NasabahService: nasabahService,
+		NasabahService:  nasabahService,
+		RekeningService: rekeningService,
 	}
 }
