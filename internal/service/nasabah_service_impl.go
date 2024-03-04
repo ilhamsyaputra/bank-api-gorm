@@ -42,11 +42,14 @@ func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp r
 
 	defer helper.TransactionStatusHandler(tx, &err, service.log)
 
+	hashedPin, err := helper.Hash(nasabah.Pin)
+	helper.ServiceError(err, service.log)
+
 	nasabahModel := entity.Nasabah{
 		Nama:       nasabah.Nama,
 		Nik:        nasabah.Nik,
 		NoHp:       nasabah.NoHp,
-		Pin:        nasabah.Pin,
+		Pin:        hashedPin,
 		KodeCabang: nasabah.KodeCabang,
 	}
 
