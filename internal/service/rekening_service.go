@@ -10,4 +10,5 @@ type RekeningService interface {
 	Tabung(rekening request.TabungRequest) (resp response.TabungResponse, err error)
 	Tarik(rekening request.TarikRequest) (resp response.TarikResponse, err error)
 	Transfer(params request.TransaksiRequest) (resp response.TransferResponse, err error)
+	GetSaldo(params string) (resp response.GetSaldo, err error)
 }

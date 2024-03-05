@@ -105,3 +105,29 @@ func (controller *RekeningController) Transfer(ctx *fiber.Ctx) error {
 
 	return ctx.Status(http.StatusOK).JSON(response_)
 }
+
+func (controller *RekeningController) CekSaldo(ctx *fiber.Ctx) error {
+	noRekening := ctx.Params("no_rekening")
+
+	response_ := response.Response{}
+
+	resp, err := controller.rekeningService.GetSaldo(noRekening)
+
+	if err != nil {
+		response_ = response.Response{
+			Code:   http.StatusBadRequest,
+			Status: "error",
+			Remark: err.Error(),
+		}
+		return ctx.Status(http.StatusBadRequest).JSON(response_)
+	}
+
+	response_ = response.Response{
+		Code:   http.StatusOK,
+		Status: "success",
+		Remark: "get saldo berhasil",
+		Data:   resp,
+	}
+
+	return ctx.Status(http.StatusOK).JSON(response_)
+}

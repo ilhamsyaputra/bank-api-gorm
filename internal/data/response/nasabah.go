@@ -15,3 +15,7 @@ type TarikResponse struct {
 type TransferResponse struct {
 	Saldo float64
 }
+
+type GetSaldo struct {
+	Saldo float64
+}

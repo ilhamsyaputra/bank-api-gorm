@@ -23,6 +23,7 @@ func (s *Server) Start() {
 	routes.Post("/tabung", s.controller.Tabung)
 	routes.Post("/tarik", s.controller.Tarik)
 	routes.Post("/transfer", s.controller.Transfer)
+	routes.Get("/saldo/:no_rekening", s.controller.CekSaldo)
 
 	err := app.Listen(":2525")
 	if err != nil {

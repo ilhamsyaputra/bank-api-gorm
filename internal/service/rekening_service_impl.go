@@ -235,3 +235,30 @@ func (s *RekeningServiceImpl) Transfer(params request.TransaksiRequest) (resp re
 
 	return
 }
+
+func (s *RekeningServiceImpl) GetSaldo(noRekening string) (resp response.GetSaldo, err error) {
+	s.log.Info(logrus.Fields{}, noRekening, "GET SALDO START")
+
+	tx := s.db.Begin()
+
+	defer helper.TransactionStatusHandler(tx, &err, s.log)
+
+	rekeningAsal := entity.Rekening{
+		NoRekening: noRekening,
+	}
+
+	saldo, err := s.rekeningRepository.GetSaldo(tx, rekeningAsal)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			err = fmt.Errorf("nomor rekening tidak valid")
+		}
+		helper.ServiceError(err, s.log)
+		return
+	}
+
+	defer s.log.Info(logrus.Fields{}, nil, "TRANSAKSI TRANSFER END")
+
+	resp = response.GetSaldo{Saldo: saldo}
+
+	return
+}
