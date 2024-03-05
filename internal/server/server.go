@@ -24,6 +24,7 @@ func (s *Server) Start() {
 	routes.Post("/tarik", s.controller.Tarik)
 	routes.Post("/transfer", s.controller.Transfer)
 	routes.Get("/saldo/:no_rekening", s.controller.CekSaldo)
+	routes.Get("/mutasi/:no_rekening", s.controller.GetMutasi)
 
 	err := app.Listen(":2525")
 	if err != nil {

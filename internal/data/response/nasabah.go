@@ -1,5 +1,7 @@
 package response
 
+import "time"
+
 type DaftarResponse struct {
 	NoRekening string
 }
@@ -18,4 +20,10 @@ type TransferResponse struct {
 
 type GetSaldo struct {
 	Saldo float64
+}
+
+type GetMutasi struct {
+	Nominal        float64   `json:"nominal"`
+	TipeTransaksi  string    `json:"kode_transaksi"`
+	WaktuTransaksi time.Time `json:"waktu"`
 }
