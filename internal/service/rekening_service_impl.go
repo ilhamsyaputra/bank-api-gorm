@@ -152,3 +152,86 @@ func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp r
 
 	return response.TarikResponse{Saldo: saldo}, nil
 }
+
+func (s *RekeningServiceImpl) Transfer(params request.TransaksiRequest) (resp response.TransferResponse, err error) {
+	s.log.Info(logrus.Fields{}, params, "TRANSAKSI START")
+	err = s.validate.Struct(params)
+	if err != nil {
+		s.log.Info(logrus.Fields{"error": err.Error()}, params, "ERROR on Daftar()")
+		return
+	}
+
+	tx := s.db.Begin()
+
+	defer helper.TransactionStatusHandler(tx, &err, s.log)
+
+	rekeningAsal := entity.Rekening{
+		NoRekening: params.NoRekeningAsal,
+	}
+	err = s.rekeningRepository.CheckRekening(tx, rekeningAsal)
+	if err == gorm.ErrRecordNotFound {
+		err = fmt.Errorf("nomor rekening asal tidak valid")
+		helper.ServiceError(err, s.log)
+		return
+	}
+
+	rekeningTujuan := entity.Rekening{
+		NoRekening: params.NoRekeningTujuan,
+	}
+	err = s.rekeningRepository.CheckRekening(tx, rekeningTujuan)
+	if err == gorm.ErrRecordNotFound {
+		err = fmt.Errorf("nomor rekening tujuan tidak valid")
+		helper.ServiceError(err, s.log)
+		return
+	}
+
+	saldoRekeningAsal, err := s.rekeningRepository.GetSaldo(tx, rekeningAsal)
+	if err != nil {
+		helper.ServiceError(err, s.log)
+		return
+	}
+
+	if params.Nominal > saldoRekeningAsal {
+		err = fmt.Errorf("saldo tidak mencukupi untuk melakukan transaksi transfer")
+		helper.ServiceError(err, s.log)
+		return
+	}
+
+	err = s.rekeningRepository.UpdateSaldo(tx, rekeningAsal, -params.Nominal)
+	if err != nil {
+		helper.ServiceError(err, s.log)
+		return
+	}
+
+	err = s.rekeningRepository.UpdateSaldo(tx, rekeningTujuan, params.Nominal)
+	if err != nil {
+		helper.ServiceError(err, s.log)
+		return
+	}
+
+	transaksi_ := entity.Transaksi{
+		Id:               uuid.New(),
+		NoRekeningAsal:   params.NoRekeningAsal,
+		NoRekeningTujuan: params.NoRekeningTujuan,
+		TipeTransaksi:    enum.TipeTransaksi.Debit,
+		Nominal:          params.Nominal,
+	}
+
+	err = s.rekeningRepository.CatatTransaksi(tx, transaksi_)
+	if err != nil {
+		helper.ServiceError(err, s.log)
+		return
+	}
+
+	saldoRekeningAsal, err = s.rekeningRepository.GetSaldo(tx, rekeningAsal)
+	if err != nil {
+		helper.ServiceError(err, s.log)
+		return
+	}
+
+	defer s.log.Info(logrus.Fields{}, nil, "TRANSAKSI TRANSFER END")
+
+	resp = response.TransferResponse{Saldo: saldoRekeningAsal}
+
+	return
+}

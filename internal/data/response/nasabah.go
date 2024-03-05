@@ -11,3 +11,7 @@ type TabungResponse struct {
 type TarikResponse struct {
 	Saldo float64
 }
+
+type TransferResponse struct {
+	Saldo float64
+}

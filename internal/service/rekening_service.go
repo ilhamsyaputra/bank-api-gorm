@@ -9,4 +9,5 @@ type RekeningService interface {
 	// CheckRekening(rekening entity.Rekening) error
 	Tabung(rekening request.TabungRequest) (resp response.TabungResponse, err error)
 	Tarik(rekening request.TarikRequest) (resp response.TarikResponse, err error)
+	Transfer(params request.TransaksiRequest) (resp response.TransferResponse, err error)
 }

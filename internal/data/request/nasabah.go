@@ -17,3 +17,9 @@ type TarikRequest struct {
 	NoRekening string  `json:"no_rekening"`
 	Nominal    float64 `json:"nominal"`
 }
+
+type TransaksiRequest struct {
+	NoRekeningAsal   string  `json:"no_rekening_asal"`
+	NoRekeningTujuan string  `json:"no_rekening_tujuan"`
+	Nominal          float64 `json:"nominal"`
+}
