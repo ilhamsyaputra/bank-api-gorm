@@ -24,26 +24,26 @@ func InitRekeningRepositoryImpl(db *gorm.DB, logger *logger.Logger) RekeningRepo
 	}
 }
 
-func (r *RekeningRepositoryImpl) Daftar(rekening entity.Rekening) error {
-	return r.db.Create(&rekening).Error
+func (r *RekeningRepositoryImpl) Daftar(tx *gorm.DB, rekening entity.Rekening) error {
+	return tx.Create(&rekening).Error
 }
 
-func (r *RekeningRepositoryImpl) CheckRekening(rekening entity.Rekening) error {
-	return r.db.First(&rekening).Error
+func (r *RekeningRepositoryImpl) CheckRekening(tx *gorm.DB, rekening entity.Rekening) error {
+	return tx.First(&rekening).Error
 }
 
-func (r *RekeningRepositoryImpl) UpdateSaldo(rekening entity.Rekening, nominal float64) error {
-	r.db.First(&rekening)
+func (r *RekeningRepositoryImpl) UpdateSaldo(tx *gorm.DB, rekening entity.Rekening, nominal float64) error {
+	tx.First(&rekening)
 	rekening.Saldo += nominal
 	return r.db.Save(&rekening).Error
 }
 
-func (r *RekeningRepositoryImpl) GetSaldo(rekening entity.Rekening) (saldo float64, err error) {
-	err = r.db.First(&rekening).Error
+func (r *RekeningRepositoryImpl) GetSaldo(tx *gorm.DB, rekening entity.Rekening) (saldo float64, err error) {
+	err = tx.First(&rekening).Error
 	saldo = rekening.Saldo
 	return
 }
 
-func (r *RekeningRepositoryImpl) CatatTransaksi(transaksi entity.Transaksi) error {
-	return r.TransaksiRepository.CatatTransaksi(transaksi)
+func (r *RekeningRepositoryImpl) CatatTransaksi(tx *gorm.DB, transaksi entity.Transaksi) error {
+	return r.TransaksiRepository.CatatTransaksi(tx, transaksi)
 }

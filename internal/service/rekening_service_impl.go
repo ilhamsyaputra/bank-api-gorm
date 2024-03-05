@@ -49,14 +49,14 @@ func (service *RekeningServiceImpl) Tabung(rekening request.TabungRequest) (resp
 		NoRekening: rekening.NoRekening,
 	}
 
-	err = service.rekeningRepository.CheckRekening(rekening_)
+	err = service.rekeningRepository.CheckRekening(tx, rekening_)
 	if err == gorm.ErrRecordNotFound {
 		err = fmt.Errorf("nomor rekening tidak valid")
 		helper.ServiceError(err, service.log)
 		return
 	}
 
-	err = service.rekeningRepository.UpdateSaldo(rekening_, rekening.Nominal)
+	err = service.rekeningRepository.UpdateSaldo(tx, rekening_, rekening.Nominal)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -70,13 +70,13 @@ func (service *RekeningServiceImpl) Tabung(rekening request.TabungRequest) (resp
 		Nominal:          rekening.Nominal,
 	}
 
-	err = service.rekeningRepository.CatatTransaksi(transaksi_)
+	err = service.rekeningRepository.CatatTransaksi(tx, transaksi_)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
 	}
 
-	saldo, err := service.rekeningRepository.GetSaldo(rekening_)
+	saldo, err := service.rekeningRepository.GetSaldo(tx, rekening_)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -103,14 +103,14 @@ func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp r
 		NoRekening: rekening.NoRekening,
 	}
 
-	err = service.rekeningRepository.CheckRekening(rekening_)
+	err = service.rekeningRepository.CheckRekening(tx, rekening_)
 	if err == gorm.ErrRecordNotFound {
 		err = fmt.Errorf("nomor rekening tidak valid")
 		helper.ServiceError(err, service.log)
 		return
 	}
 
-	saldo, err := service.rekeningRepository.GetSaldo(rekening_)
+	saldo, err := service.rekeningRepository.GetSaldo(tx, rekening_)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -122,7 +122,7 @@ func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp r
 		return
 	}
 
-	err = service.rekeningRepository.UpdateSaldo(rekening_, -rekening.Nominal)
+	err = service.rekeningRepository.UpdateSaldo(tx, rekening_, -rekening.Nominal)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -136,13 +136,13 @@ func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp r
 		Nominal:          rekening.Nominal,
 	}
 
-	err = service.rekeningRepository.CatatTransaksi(transaksi_)
+	err = service.rekeningRepository.CatatTransaksi(tx, transaksi_)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
 	}
 
-	saldo, err = service.rekeningRepository.GetSaldo(rekening_)
+	saldo, err = service.rekeningRepository.GetSaldo(tx, rekening_)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return

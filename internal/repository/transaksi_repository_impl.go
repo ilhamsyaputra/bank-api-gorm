@@ -18,6 +18,6 @@ func InitTransaksiRepositoryImpl(db *gorm.DB, logger *logger.Logger) TransaksiRe
 	}
 }
 
-func (r *TransaksiRepositoryImpl) CatatTransaksi(transaksi entity.Transaksi) error {
-	return r.db.Create(&transaksi).Error
+func (r *TransaksiRepositoryImpl) CatatTransaksi(tx *gorm.DB, transaksi entity.Transaksi) error {
+	return tx.Create(&transaksi).Error
 }

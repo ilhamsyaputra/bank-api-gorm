@@ -1,7 +1,10 @@
 package repository
 
-import "github.com/ilhamsyaputra/bank-api-gorm/internal/entity"
+import (
+	"github.com/ilhamsyaputra/bank-api-gorm/internal/entity"
+	"gorm.io/gorm"
+)
 
 type TransaksiRepository interface {
-	CatatTransaksi(transaksi entity.Transaksi) error
+	CatatTransaksi(tx *gorm.DB, transaksi entity.Transaksi) error
 }

@@ -6,16 +6,16 @@ import (
 )
 
 type NasabahRepository interface {
-	ValidateNewUser(nasabah entity.Nasabah) *gorm.DB
-	DaftarNasabah(nasabah entity.Nasabah) error
+	ValidateNewUser(tx *gorm.DB, nasabah entity.Nasabah) *gorm.DB
+	DaftarNasabah(tx *gorm.DB, nasabah entity.Nasabah) error
 
 	// rekening
-	DaftarRekening(rekening entity.Rekening) error
-	CheckRekening(rekening entity.Rekening) error
+	DaftarRekening(tx *gorm.DB, rekening entity.Rekening) error
+	CheckRekening(tx *gorm.DB, rekening entity.Rekening) error
 
 	// counter
-	GetNoNasabah() string
+	GetNoNasabah(tx *gorm.DB) string
 	UpdateNoNasabah(tx *gorm.DB) error
-	GetNoRekening() string
+	GetNoRekening(tx *gorm.DB) string
 	UpdateNoRekening(tx *gorm.DB) error
 }

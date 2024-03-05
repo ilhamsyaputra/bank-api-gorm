@@ -19,9 +19,9 @@ func InitCounterRepositoryImpl(db *gorm.DB, logger *logger.Logger) CounterReposi
 	return &CounterRepositoryImpl{db: db, logger: logger}
 }
 
-func (r *CounterRepositoryImpl) GetNoNasabah() string {
+func (r *CounterRepositoryImpl) GetNoNasabah(tx *gorm.DB) string {
 	counter := entity.Counter{}
-	r.db.Select("value").First(&counter, "name = ?", enum.Counter.NoNasabah)
+	tx.Select("value").First(&counter, "name = ?", enum.Counter.NoNasabah)
 	return strconv.Itoa(int(counter.Value) + 1)
 }
 
@@ -38,9 +38,9 @@ func (r *CounterRepositoryImpl) UpdateNoNasabah(tx *gorm.DB) (err error) {
 	return
 }
 
-func (r *CounterRepositoryImpl) GetNoRekening() string {
+func (r *CounterRepositoryImpl) GetNoRekening(tx *gorm.DB) string {
 	counter := entity.Counter{}
-	r.db.Select("value").First(&counter, "name = ?", enum.Counter.NoRekening)
+	tx.Select("value").First(&counter, "name = ?", enum.Counter.NoRekening)
 	return strconv.Itoa(int(counter.Value) + 1)
 }
 

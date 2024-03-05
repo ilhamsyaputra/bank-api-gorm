@@ -53,23 +53,23 @@ func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp r
 		KodeCabang: nasabah.KodeCabang,
 	}
 
-	validateUser := service.nasabahRepository.ValidateNewUser(nasabahModel)
+	validateUser := service.nasabahRepository.ValidateNewUser(tx, nasabahModel)
 	if validateUser.RowsAffected != 0 {
 		err = fmt.Errorf("tidak dapat melakukan registrasi. data nik atau no_hp sudah terdaftar di sistem")
 		helper.ServiceError(err, service.log)
 		return
 	}
 
-	noNasabahCounter := service.nasabahRepository.GetNoNasabah()
+	noNasabahCounter := service.nasabahRepository.GetNoNasabah(tx)
 	noNasabah := nasabah.KodeCabang + helper.Zfill(noNasabahCounter, "0", 6)
 	nasabahModel.NoNasabah = noNasabah
 
-	err = service.nasabahRepository.DaftarNasabah(nasabahModel)
+	err = service.nasabahRepository.DaftarNasabah(tx, nasabahModel)
 	helper.ServiceError(err, service.log)
 
 	// registrasi rekening
 	BANK_CODE_FILLER := "99"
-	noRekeningCounter := service.nasabahRepository.GetNoRekening()
+	noRekeningCounter := service.nasabahRepository.GetNoRekening(tx)
 	noRekening := BANK_CODE_FILLER + nasabah.KodeCabang + helper.Zfill(noRekeningCounter, "0", 8)
 
 	rekening := entity.Rekening{
@@ -77,7 +77,7 @@ func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp r
 		NoRekening: noRekening,
 	}
 
-	err = service.nasabahRepository.DaftarRekening(rekening)
+	err = service.nasabahRepository.DaftarRekening(tx, rekening)
 	helper.ServiceError(err, service.log)
 
 	// update counter

@@ -24,34 +24,34 @@ func InitNasabahRepositoryImpl(db *gorm.DB, logger *logger.Logger) NasabahReposi
 	}
 }
 
-func (r *NasabahRepositoryImpl) DaftarNasabah(nasabah entity.Nasabah) error {
-	return r.db.Create(&nasabah).Error
+func (r *NasabahRepositoryImpl) DaftarNasabah(tx *gorm.DB, nasabah entity.Nasabah) error {
+	return tx.Create(&nasabah).Error
 }
 
-func (r *NasabahRepositoryImpl) ValidateNewUser(nasabah entity.Nasabah) *gorm.DB {
-	return r.db.Where("nik = ?", nasabah.Nik).Or("no_hp = ?", nasabah.NoHp).First(&nasabah)
+func (r *NasabahRepositoryImpl) ValidateNewUser(tx *gorm.DB, nasabah entity.Nasabah) *gorm.DB {
+	return tx.Where("nik = ?", nasabah.Nik).Or("no_hp = ?", nasabah.NoHp).First(&nasabah)
 }
 
-func (r *NasabahRepositoryImpl) GetNoNasabah() string {
-	return r.CounterRepository.GetNoNasabah()
+func (r *NasabahRepositoryImpl) GetNoNasabah(tx *gorm.DB) string {
+	return r.CounterRepository.GetNoNasabah(tx)
 }
 
 func (r *NasabahRepositoryImpl) UpdateNoNasabah(tx *gorm.DB) error {
 	return r.CounterRepository.UpdateNoNasabah(tx)
 }
 
-func (r *NasabahRepositoryImpl) GetNoRekening() string {
-	return r.CounterRepository.GetNoRekening()
+func (r *NasabahRepositoryImpl) GetNoRekening(tx *gorm.DB) string {
+	return r.CounterRepository.GetNoRekening(tx)
 }
 
 func (r *NasabahRepositoryImpl) UpdateNoRekening(tx *gorm.DB) error {
 	return r.CounterRepository.UpdateNoRekening(tx)
 }
 
-func (r *NasabahRepositoryImpl) DaftarRekening(rekening entity.Rekening) error {
-	return r.RekeningRepository.Daftar(rekening)
+func (r *NasabahRepositoryImpl) DaftarRekening(tx *gorm.DB, rekening entity.Rekening) error {
+	return r.RekeningRepository.Daftar(tx, rekening)
 }
 
-func (r *NasabahRepositoryImpl) CheckRekening(rekening entity.Rekening) error {
-	return r.RekeningRepository.CheckRekening(rekening)
+func (r *NasabahRepositoryImpl) CheckRekening(tx *gorm.DB, rekening entity.Rekening) error {
+	return r.RekeningRepository.CheckRekening(tx, rekening)
 }
