@@ -8,6 +8,7 @@ import (
 type NasabahRepository interface {
 	ValidateNewUser(tx *gorm.DB, nasabah entity.Nasabah) *gorm.DB
 	DaftarNasabah(tx *gorm.DB, nasabah entity.Nasabah) error
+	Login(tx *gorm.DB, nasabah entity.Nasabah) (result entity.Nasabah, err error)
 
 	// rekening
 	DaftarRekening(tx *gorm.DB, rekening entity.Rekening) error

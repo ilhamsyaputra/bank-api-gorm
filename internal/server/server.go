@@ -20,6 +20,7 @@ func (s *Server) Start() {
 
 	routes := app.Group("/v1")
 	routes.Post("/daftar", s.controller.Daftar)
+	routes.Post("/login", s.controller.Login)
 	routes.Post("/tabung", s.controller.Tabung)
 	routes.Post("/tarik", s.controller.Tarik)
 	routes.Post("/transfer", s.controller.Transfer)

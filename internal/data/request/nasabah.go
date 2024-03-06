@@ -23,3 +23,8 @@ type TransaksiRequest struct {
 	NoRekeningTujuan string  `json:"no_rekening_tujuan"`
 	Nominal          float64 `json:"nominal"`
 }
+
+type LoginRequest struct {
+	NoNasabah string `json:"no_nasabah" validate:"required"`
+	Pin       string `json:"pin" validate:"required"`
+}

@@ -49,3 +49,31 @@ func (controller *NasabahController) Daftar(ctx *fiber.Ctx) error {
 
 	return ctx.Status(http.StatusCreated).JSON(response_)
 }
+
+func (controller *NasabahController) Login(ctx *fiber.Ctx) error {
+	request_ := request.LoginRequest{}
+	response_ := response.Response{}
+
+	err := ctx.BodyParser(&request_)
+	helper.ControllerErrorHelper(ctx, err, controller.logger)
+
+	resp, err := controller.nasabahService.Login(request_)
+
+	if err != nil {
+		response_ = response.Response{
+			Code:   http.StatusBadRequest,
+			Status: "error",
+			Remark: err.Error(),
+		}
+		return ctx.Status(http.StatusBadRequest).JSON(response_)
+	}
+
+	response_ = response.Response{
+		Code:   http.StatusCreated,
+		Status: "success",
+		Remark: "login berhasil",
+		Data:   resp,
+	}
+
+	return ctx.Status(http.StatusCreated).JSON(response_)
+}

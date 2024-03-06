@@ -7,4 +7,5 @@ import (
 
 type NasabahService interface {
 	Daftar(nasabah request.DaftarRequest) (response.DaftarResponse, error)
+	Login(params request.LoginRequest) (response.LoginResponse, error)
 }

@@ -27,3 +27,7 @@ type GetMutasi struct {
 	TipeTransaksi  string    `json:"kode_transaksi"`
 	WaktuTransaksi time.Time `json:"waktu"`
 }
+
+type LoginResponse struct {
+	Pin string
+}

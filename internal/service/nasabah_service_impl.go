@@ -11,6 +11,7 @@ import (
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/helper"
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -87,4 +88,45 @@ func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp r
 	defer service.log.Info(logrus.Fields{}, noRekening, "Daftar Nasabah END")
 
 	return response.DaftarResponse{NoRekening: noRekening}, nil
+}
+
+func (s *NasabahServiceImpl) Login(params request.LoginRequest) (resp response.LoginResponse, err error) {
+	s.log.Info(logrus.Fields{}, params, "LOGIN START")
+	err = s.validate.Struct(params)
+	if err != nil {
+		s.log.Info(logrus.Fields{"error": err.Error()}, params, "ERROR on Login()")
+		return
+	}
+
+	tx := s.db.Begin()
+
+	defer helper.TransactionStatusHandler(tx, &err, s.log)
+
+	nasabah_ := entity.Nasabah{
+		NoNasabah: params.NoNasabah,
+		Pin:       params.Pin,
+	}
+	result, err := s.nasabahRepository.Login(tx, nasabah_)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			err = fmt.Errorf("tidak dapat melakukan login, user tidak ditemukan")
+		}
+		helper.ServiceError(err, s.log)
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(result.Pin), []byte(params.Pin))
+	if err != nil {
+		err = fmt.Errorf("tidak dapat melakukan login, pin tidak tepat")
+		helper.ServiceError(err, s.log)
+		return
+	}
+
+	resp = response.LoginResponse{
+		Pin: result.Pin,
+	}
+
+	defer s.log.Info(logrus.Fields{}, resp, "LOGIN END")
+
+	return
 }

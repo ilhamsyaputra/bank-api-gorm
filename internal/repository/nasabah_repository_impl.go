@@ -55,3 +55,10 @@ func (r *NasabahRepositoryImpl) DaftarRekening(tx *gorm.DB, rekening entity.Reke
 func (r *NasabahRepositoryImpl) CheckRekening(tx *gorm.DB, rekening entity.Rekening) error {
 	return r.RekeningRepository.CheckRekening(tx, rekening)
 }
+
+func (r *NasabahRepositoryImpl) Login(tx *gorm.DB, nasabah entity.Nasabah) (result entity.Nasabah, err error) {
+	err = tx.Where("no_nasabah = ?", nasabah.NoNasabah).
+		Select("pin").
+		First(&result).Error
+	return
+}
