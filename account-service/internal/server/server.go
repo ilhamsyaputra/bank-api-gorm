@@ -34,7 +34,7 @@ func (s *Server) Start(logger *logger.Logger) {
 	routes.Get("/saldo/:no_rekening", authorization, s.controller.CekSaldo)
 	routes.Get("/mutasi/:no_rekening", authorization, s.controller.GetMutasi)
 
-	err := app.Listen(":2525")
+	err := app.Listen(":20025")
 	if err != nil {
 		panic(err)
 	}

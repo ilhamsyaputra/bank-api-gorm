@@ -1,0 +1,27 @@
+services:
+  postgres:
+    container_name: postgres
+    image: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - ~/data/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=toor
+      - POSTGRES_DB=bank
+    restart:
+      always
+
+  account-service:
+    container_name: account-service
+    image: account-service
+    build: ./account-service
+    ports:
+      - 2525:20025
+    depends_on:
+      - postgres
+    restart:
+      always
+    env_file:
+      - ./account-service/config.env
