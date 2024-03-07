@@ -29,5 +29,5 @@ type GetMutasi struct {
 }
 
 type LoginResponse struct {
-	Pin string
+	Token string
 }

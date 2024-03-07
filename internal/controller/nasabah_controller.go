@@ -65,7 +65,7 @@ func (controller *NasabahController) Login(ctx *fiber.Ctx) error {
 			Status: "error",
 			Remark: err.Error(),
 		}
-		return ctx.Status(http.StatusBadRequest).JSON(response_)
+		return ctx.Status(fiber.StatusBadRequest).JSON(response_)
 	}
 
 	response_ = response.Response{
@@ -75,5 +75,5 @@ func (controller *NasabahController) Login(ctx *fiber.Ctx) error {
 		Data:   resp,
 	}
 
-	return ctx.Status(http.StatusCreated).JSON(response_)
+	return ctx.Status(fiber.StatusOK).JSON(response_)
 }

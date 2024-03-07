@@ -24,5 +24,5 @@ func main() {
 	server := server.InitServer(*controller)
 
 	// Start service API
-	server.Start()
+	server.Start(logger)
 }

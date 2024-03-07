@@ -10,5 +10,5 @@ type Nasabah struct {
 	Pin               string     `gorm:"type:text;not null"`
 	KodeCabang        string     `gorm:"type:varchar(5);not null"`
 	TanggalRegistrasi time.Time  `gorm:"type:timestamp;not null;default:NOW()"`
-	Rekening          []Rekening `gorm:"foreignKey:NoRekening"`
+	Rekening          []Rekening `gorm:"foreignKey:NoNasabah"`
 }

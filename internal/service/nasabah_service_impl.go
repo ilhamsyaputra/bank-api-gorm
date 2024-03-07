@@ -2,8 +2,10 @@ package service
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/go-playground/validator/v10"
+	jtoken "github.com/golang-jwt/jwt/v4"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/data/request"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/data/response"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/entity"
@@ -11,6 +13,7 @@ import (
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/helper"
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -92,6 +95,8 @@ func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp r
 
 func (s *NasabahServiceImpl) Login(params request.LoginRequest) (resp response.LoginResponse, err error) {
 	s.log.Info(logrus.Fields{}, params, "LOGIN START")
+	JWT_SECRET := viper.GetString("JWT_SECRET")
+
 	err = s.validate.Struct(params)
 	if err != nil {
 		s.log.Info(logrus.Fields{"error": err.Error()}, params, "ERROR on Login()")
@@ -122,8 +127,26 @@ func (s *NasabahServiceImpl) Login(params request.LoginRequest) (resp response.L
 		return
 	}
 
+	// jwt claims
+	claims := jtoken.MapClaims{
+		"no_nasabah": params.NoNasabah,
+		"pin":        result.Pin,
+		"exp":        time.Now().Add(time.Hour * 1).Unix(),
+	}
+
+	// create token
+	token := jtoken.NewWithClaims(jtoken.SigningMethodHS256, claims)
+
+	// generate encoded token
+	token_, err := token.SignedString([]byte(JWT_SECRET))
+	if err != nil {
+		helper.ServiceError(err, s.log)
+		err = fmt.Errorf("terjadi kesalahan! harap hubungi technical support")
+		return
+	}
+
 	resp = response.LoginResponse{
-		Pin: result.Pin,
+		Token: token_,
 	}
 
 	defer s.log.Info(logrus.Fields{}, resp, "LOGIN END")

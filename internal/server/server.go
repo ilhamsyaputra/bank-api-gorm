@@ -3,6 +3,8 @@ package server
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/controller"
+	"github.com/ilhamsyaputra/bank-api-gorm/internal/middleware"
+	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
 )
 
 type Server struct {
@@ -15,17 +17,22 @@ func InitServer(controller controller.Controller) *Server {
 	}
 }
 
-func (s *Server) Start() {
+func (s *Server) Start(logger *logger.Logger) {
 	app := fiber.New()
+
+	authentication := middleware.NewAuthenticationMiddleware()
+	authorization := middleware.NewAuthorizationMiddleware()
 
 	routes := app.Group("/v1")
 	routes.Post("/daftar", s.controller.Daftar)
 	routes.Post("/login", s.controller.Login)
-	routes.Post("/tabung", s.controller.Tabung)
-	routes.Post("/tarik", s.controller.Tarik)
-	routes.Post("/transfer", s.controller.Transfer)
-	routes.Get("/saldo/:no_rekening", s.controller.CekSaldo)
-	routes.Get("/mutasi/:no_rekening", s.controller.GetMutasi)
+
+	routes.Use(authentication)
+	routes.Post("/tabung", authorization, s.controller.Tabung)
+	routes.Post("/tarik", authorization, s.controller.Tarik)
+	routes.Post("/transfer", authorization, s.controller.Transfer)
+	routes.Get("/saldo/:no_rekening", authorization, s.controller.CekSaldo)
+	routes.Get("/mutasi/:no_rekening", authorization, s.controller.GetMutasi)
 
 	err := app.Listen(":2525")
 	if err != nil {
