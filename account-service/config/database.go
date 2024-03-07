@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 
+	"github.com/ilhamsyaputra/bank-api-gorm/internal/entity"
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
@@ -28,6 +29,51 @@ func InitDatabase(viper *viper.Viper, log *logger.Logger) *gorm.DB {
 	})
 	if err != nil {
 		panic(err)
+	}
+
+	err = db.AutoMigrate(
+		&entity.Nasabah{},
+		&entity.Enum{},
+		&entity.Rekening{},
+		&entity.Transaksi{},
+		&entity.Counter{},
+	)
+
+	if err == nil && db.Migrator().HasTable(&entity.Enum{}) {
+		err = db.First(&entity.Enum{}).Error
+		if err == gorm.ErrRecordNotFound {
+			enums := []*entity.Enum{
+				{
+					Scope:       "tipe_transaksi",
+					Value:       "D",
+					Description: "Tarik",
+				},
+				{
+					Scope:       "tipe_transaksi",
+					Value:       "C",
+					Description: "Tabung",
+				},
+			}
+
+			db.Create(enums)
+		}
+	}
+
+	if db.Migrator().HasTable(&entity.Counter{}) {
+		err = db.First(&entity.Enum{}).Error
+		if err == gorm.ErrRecordNotFound {
+			counter := []*entity.Counter{
+				{
+					Name:  "No Nasabah",
+					Value: 0,
+				},
+				{
+					Name:  "No Rekening",
+					Value: 0,
+				},
+			}
+			db.Create(counter)
+		}
 	}
 
 	return db
