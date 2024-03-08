@@ -44,11 +44,11 @@ func InitRekeningRepositoryImpl(ctx context.Context, db *gorm.DB, repo repositor
 	}
 }
 
-func (service *RekeningServiceImpl) Tabung(rekening request.TabungRequest) (resp response.TabungResponse, err error) {
-	service.log.Info(logrus.Fields{}, rekening, "TRANSAKSI TABUNG START")
-	err = service.validate.Struct(rekening)
+func (service *RekeningServiceImpl) Tabung(ctx context.Context, params request.TabungRequest) (resp response.TabungResponse, err error) {
+	service.log.Info(logrus.Fields{}, params, "TRANSAKSI TABUNG START")
+	err = service.validate.Struct(params)
 	if err != nil {
-		service.log.Info(logrus.Fields{"error": err.Error()}, rekening, "ERROR on Daftar()")
+		service.log.Info(logrus.Fields{"error": err.Error()}, params, "ERROR on Daftar()")
 		return
 	}
 
@@ -57,7 +57,7 @@ func (service *RekeningServiceImpl) Tabung(rekening request.TabungRequest) (resp
 	defer helper.TransactionStatusHandler(tx, &err, service.log)
 
 	rekening_ := entity.Rekening{
-		NoRekening: rekening.NoRekening,
+		NoRekening: params.NoRekening,
 	}
 
 	err = service.rekeningRepository.CheckRekening(tx, rekening_)
@@ -67,7 +67,7 @@ func (service *RekeningServiceImpl) Tabung(rekening request.TabungRequest) (resp
 		return
 	}
 
-	err = service.rekeningRepository.UpdateSaldo(tx, rekening_, rekening.Nominal)
+	err = service.rekeningRepository.UpdateSaldo(tx, rekening_, params.Nominal)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -75,10 +75,10 @@ func (service *RekeningServiceImpl) Tabung(rekening request.TabungRequest) (resp
 
 	transaksi_ := entity.Transaksi{
 		Id:               uuid.New(),
-		NoRekeningAsal:   rekening.NoRekening,
-		NoRekeningTujuan: rekening.NoRekening,
+		NoRekeningAsal:   params.NoRekening,
+		NoRekeningTujuan: params.NoRekening,
 		TipeTransaksi:    enum.TipeTransaksi.Kredit,
-		Nominal:          rekening.Nominal,
+		Nominal:          params.Nominal,
 	}
 
 	err = service.rekeningRepository.CatatTransaksi(tx, transaksi_)
@@ -93,16 +93,31 @@ func (service *RekeningServiceImpl) Tabung(rekening request.TabungRequest) (resp
 		return
 	}
 
+	dataRedis := data.RedisPublish{
+		Event:            "SETOR",
+		NoRekeningDebit:  params.NoRekening,
+		NoRekeningKredit: params.NoRekening,
+		NominalKredit:    params.Nominal,
+		NominalDebit:     params.Nominal,
+		TanggalTransaksi: time.Now().Format("01-02-2006"),
+	}
+
+	err = service.RedisService.Publish(ctx, service.redis_, dataRedis)
+	if err != nil {
+		helper.ServiceError(err, service.log)
+		return
+	}
+
 	defer service.log.Info(logrus.Fields{}, nil, "TRANSAKSI TABUNG END")
 
 	return response.TabungResponse{Saldo: saldo}, nil
 }
 
-func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp response.TarikResponse, err error) {
-	service.log.Info(logrus.Fields{}, rekening, "TRANSAKSI TARIK START")
-	err = service.validate.Struct(rekening)
+func (service *RekeningServiceImpl) Tarik(ctx context.Context, params request.TarikRequest) (resp response.TarikResponse, err error) {
+	service.log.Info(logrus.Fields{}, params, "TRANSAKSI TARIK START")
+	err = service.validate.Struct(params)
 	if err != nil {
-		service.log.Info(logrus.Fields{"error": err.Error()}, rekening, "ERROR on Daftar()")
+		service.log.Info(logrus.Fields{"error": err.Error()}, params, "ERROR on Daftar()")
 		return
 	}
 
@@ -111,7 +126,7 @@ func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp r
 	defer helper.TransactionStatusHandler(tx, &err, service.log)
 
 	rekening_ := entity.Rekening{
-		NoRekening: rekening.NoRekening,
+		NoRekening: params.NoRekening,
 	}
 
 	err = service.rekeningRepository.CheckRekening(tx, rekening_)
@@ -127,13 +142,13 @@ func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp r
 		return
 	}
 
-	if rekening.Nominal > saldo {
+	if params.Nominal > saldo {
 		err = fmt.Errorf("saldo tidak mencukupi untuk melakukan transaksi tarik")
 		helper.ServiceError(err, service.log)
 		return
 	}
 
-	err = service.rekeningRepository.UpdateSaldo(tx, rekening_, -rekening.Nominal)
+	err = service.rekeningRepository.UpdateSaldo(tx, rekening_, -params.Nominal)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -141,10 +156,10 @@ func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp r
 
 	transaksi_ := entity.Transaksi{
 		Id:               uuid.New(),
-		NoRekeningAsal:   rekening.NoRekening,
-		NoRekeningTujuan: rekening.NoRekening,
+		NoRekeningAsal:   params.NoRekening,
+		NoRekeningTujuan: params.NoRekening,
 		TipeTransaksi:    enum.TipeTransaksi.Debit,
-		Nominal:          rekening.Nominal,
+		Nominal:          params.Nominal,
 	}
 
 	err = service.rekeningRepository.CatatTransaksi(tx, transaksi_)
@@ -159,13 +174,28 @@ func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp r
 		return
 	}
 
+	dataRedis := data.RedisPublish{
+		Event:            "TARIK",
+		NoRekeningDebit:  params.NoRekening,
+		NoRekeningKredit: params.NoRekening,
+		NominalKredit:    params.Nominal,
+		NominalDebit:     params.Nominal,
+		TanggalTransaksi: time.Now().Format("01-02-2006"),
+	}
+
+	err = service.RedisService.Publish(ctx, service.redis_, dataRedis)
+	if err != nil {
+		helper.ServiceError(err, service.log)
+		return
+	}
+
 	defer service.log.Info(logrus.Fields{}, nil, "TRANSAKSI TARIK END")
 
 	return response.TarikResponse{Saldo: saldo}, nil
 }
 
 func (s *RekeningServiceImpl) Transfer(ctx context.Context, params request.TransaksiRequest) (resp response.TransferResponse, err error) {
-	s.log.Info(logrus.Fields{}, params, "TRANSAKSI START")
+	s.log.Info(logrus.Fields{}, params, "TRANSAKSI TRANSFER START")
 	err = s.validate.Struct(params)
 	if err != nil {
 		s.log.Info(logrus.Fields{"error": err.Error()}, params, "ERROR on Daftar()")

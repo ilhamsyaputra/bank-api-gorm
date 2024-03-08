@@ -41,7 +41,7 @@ func (controller *RekeningController) Tabung(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response_)
 	}
 
-	resp, err := controller.rekeningService.Tabung(request_)
+	resp, err := controller.rekeningService.Tabung(controller.rediscontext, request_)
 	if err != nil {
 		helper.ControllerError(err, controller.logger)
 		response_ = response.Response{
@@ -77,7 +77,7 @@ func (controller *RekeningController) Tarik(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response_)
 	}
 
-	resp, err := controller.rekeningService.Tarik(request_)
+	resp, err := controller.rekeningService.Tarik(controller.rediscontext, request_)
 	if err != nil {
 		helper.ControllerError(err, controller.logger)
 		response_ = response.Response{
