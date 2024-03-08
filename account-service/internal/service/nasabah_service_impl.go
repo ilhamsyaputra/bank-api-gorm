@@ -47,7 +47,7 @@ func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp r
 	defer helper.TransactionStatusHandler(tx, &err, service.log)
 
 	hashedPin, err := helper.Hash(nasabah.Pin)
-	helper.ServiceError(err, service.log)
+	helper.ServiceError(&err, service.log)
 
 	nasabahModel := entity.Nasabah{
 		Nama:       nasabah.Nama,
@@ -60,7 +60,7 @@ func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp r
 	validateUser := service.nasabahRepository.ValidateNewUser(tx, nasabahModel)
 	if validateUser.RowsAffected != 0 {
 		err = fmt.Errorf("tidak dapat melakukan registrasi. data nik atau no_hp sudah terdaftar di sistem")
-		helper.ServiceError(err, service.log)
+		helper.ServiceError(&err, service.log)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp r
 	nasabahModel.NoNasabah = noNasabah
 
 	err = service.nasabahRepository.DaftarNasabah(tx, nasabahModel)
-	helper.ServiceError(err, service.log)
+	helper.ServiceError(&err, service.log)
 
 	// registrasi rekening
 	BANK_CODE_FILLER := "99"
@@ -82,7 +82,7 @@ func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp r
 	}
 
 	err = service.nasabahRepository.DaftarRekening(tx, rekening)
-	helper.ServiceError(err, service.log)
+	helper.ServiceError(&err, service.log)
 
 	// update counter
 	service.nasabahRepository.UpdateNoNasabah(tx)
@@ -116,14 +116,14 @@ func (s *NasabahServiceImpl) Login(params request.LoginRequest) (resp response.L
 		if err == gorm.ErrRecordNotFound {
 			err = fmt.Errorf("tidak dapat melakukan login, user tidak ditemukan")
 		}
-		helper.ServiceError(err, s.log)
+		helper.ServiceError(&err, s.log)
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(result.Pin), []byte(params.Pin))
 	if err != nil {
 		err = fmt.Errorf("tidak dapat melakukan login, pin tidak tepat")
-		helper.ServiceError(err, s.log)
+		helper.ServiceError(&err, s.log)
 		return
 	}
 
@@ -140,7 +140,7 @@ func (s *NasabahServiceImpl) Login(params request.LoginRequest) (resp response.L
 	// generate encoded token
 	token_, err := token.SignedString([]byte(JWT_SECRET))
 	if err != nil {
-		helper.ServiceError(err, s.log)
+		helper.ServiceError(&err, s.log)
 		err = fmt.Errorf("terjadi kesalahan! harap hubungi technical support")
 		return
 	}
