@@ -21,7 +21,7 @@ func main() {
 	repository := repository.InitRepository(db, logger)
 	service := service.InitService(db, repository, logger)
 	controller := controller.InitController(service, logger)
-	server := server.InitServer(*controller)
+	server := server.InitServer(controller)
 
 	// Start service API
 	server.Start(logger)

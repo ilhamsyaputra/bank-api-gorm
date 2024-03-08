@@ -11,9 +11,9 @@ type Server struct {
 	controller controller.Controller
 }
 
-func InitServer(controller controller.Controller) *Server {
+func InitServer(controller *controller.Controller) *Server {
 	return &Server{
-		controller: controller,
+		controller: *controller,
 	}
 }
 
