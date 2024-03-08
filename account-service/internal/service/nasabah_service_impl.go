@@ -90,7 +90,7 @@ func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp r
 
 	defer service.log.Info(logrus.Fields{}, noRekening, "Daftar Nasabah END")
 
-	return response.DaftarResponse{NoRekening: noRekening}, nil
+	return response.DaftarResponse{NoNasabah: noNasabah, NoRekening: noRekening}, nil
 }
 
 func (s *NasabahServiceImpl) Login(params request.LoginRequest) (resp response.LoginResponse, err error) {
