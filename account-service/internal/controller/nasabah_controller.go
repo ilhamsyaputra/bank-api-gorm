@@ -19,6 +19,7 @@ type NasabahController struct {
 func InitNasabahController(service service.NasabahService, logger *logger.Logger) *NasabahController {
 	return &NasabahController{
 		nasabahService: service,
+		logger:         logger,
 	}
 }
 
@@ -28,7 +29,7 @@ func (controller *NasabahController) Daftar(ctx *fiber.Ctx) (err error) {
 
 	err = ctx.BodyParser(&request_)
 	if err != nil {
-		helper.ControllerError(&err, controller.logger)
+		helper.ControllerError(err, controller.logger)
 		response_ = response.Response{
 			Code:   fiber.StatusBadRequest,
 			Status: "error",
@@ -39,7 +40,7 @@ func (controller *NasabahController) Daftar(ctx *fiber.Ctx) (err error) {
 
 	resp, err := controller.nasabahService.Daftar(request_)
 	if err != nil {
-		helper.ControllerError(&err, controller.logger)
+		helper.ControllerError(err, controller.logger)
 		response_ = response.Response{
 			Code:   fiber.StatusBadRequest,
 			Status: "error",
@@ -64,13 +65,13 @@ func (controller *NasabahController) Login(ctx *fiber.Ctx) (err error) {
 
 	err = ctx.BodyParser(&request_)
 	if err != nil {
-		helper.ControllerError(&err, controller.logger)
+		helper.ControllerError(err, controller.logger)
 		return
 	}
 
 	resp, err := controller.nasabahService.Login(request_)
 	if err != nil {
-		helper.ControllerError(&err, controller.logger)
+		helper.ControllerError(err, controller.logger)
 		response_ = response.Response{
 			Code:   http.StatusBadRequest,
 			Status: "error",

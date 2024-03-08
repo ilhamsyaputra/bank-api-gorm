@@ -42,7 +42,7 @@ func (s *TransaksiServiceImpl) GetMutasi(noRekening string) (resp []response.Get
 
 	result, err := s.transaksiRepository.GetMutasi(tx, rekening)
 	if err != nil {
-		helper.ServiceError(&err, s.log)
+		helper.ServiceError(err, s.log)
 		return
 	}
 

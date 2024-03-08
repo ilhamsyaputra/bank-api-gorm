@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"context"
+
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/service"
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
 )
@@ -11,9 +13,9 @@ type Controller struct {
 	TransaksiController
 }
 
-func InitController(service *service.Service, logger *logger.Logger) *Controller {
+func InitController(ctx context.Context, service *service.Service, logger *logger.Logger) *Controller {
 	nasabahController := InitNasabahController(service, logger)
-	rekeningController := InitRekeningController(service, logger)
+	rekeningController := InitRekeningController(ctx, service, logger)
 	transaksiController := InitTransaksiController(service, logger)
 
 	return &Controller{

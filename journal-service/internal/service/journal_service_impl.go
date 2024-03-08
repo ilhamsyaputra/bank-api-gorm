@@ -22,7 +22,7 @@ type JournalServiceImpl struct {
 	db                *gorm.DB
 }
 
-func InitJournalRepositoryImpl(db *gorm.DB, repo repository.JournalRepository, validator *validator.Validate, logger *logger.Logger) JournalService {
+func InitJournalServiceImpl(db *gorm.DB, repo repository.JournalRepository, validator *validator.Validate, logger *logger.Logger) JournalService {
 	return &JournalServiceImpl{
 		journalRepository: repo,
 		validate:          validator,
@@ -47,7 +47,7 @@ func (service *JournalServiceImpl) CreateJournal(journal request.CreateJournal) 
 
 	defer helper.TransactionStatusHandler(tx, &err, service.log)
 
-	tanggalTransaksi, err := time.Parse("02-01-2006", journal.TanggalTransaksi)
+	tanggalTransaksi, err := time.Parse("01-02-2006", journal.TanggalTransaksi)
 
 	journal_ := entity.Journal{
 		Id:               uuid.New(),

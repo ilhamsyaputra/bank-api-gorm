@@ -5,5 +5,5 @@ import (
 )
 
 type JournalService interface {
-	CreateJournal(nasabah request.CreateJournal) error
+	CreateJournal(journal request.CreateJournal) error
 }

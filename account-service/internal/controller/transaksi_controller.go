@@ -16,6 +16,7 @@ type TransaksiController struct {
 func InitTransaksiController(service service.TransaksiService, logger *logger.Logger) *TransaksiController {
 	return &TransaksiController{
 		transaksiService: service,
+		logger:           logger,
 	}
 }
 
@@ -26,7 +27,7 @@ func (controller *TransaksiController) GetMutasi(ctx *fiber.Ctx) error {
 
 	resp, err := controller.transaksiService.GetMutasi(noRekening)
 	if err != nil {
-		helper.ControllerError(&err, controller.logger)
+		helper.ControllerError(err, controller.logger)
 		response_ = response.Response{
 			Code:   fiber.StatusBadRequest,
 			Status: "error",

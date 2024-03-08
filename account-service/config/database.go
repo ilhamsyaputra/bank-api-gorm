@@ -60,7 +60,7 @@ func InitDatabase(viper *viper.Viper, log *logger.Logger) *gorm.DB {
 	}
 
 	if db.Migrator().HasTable(&entity.Counter{}) {
-		err = db.First(&entity.Enum{}).Error
+		err = db.First(&entity.Counter{}).Error
 		if err == gorm.ErrRecordNotFound {
 			counter := []*entity.Counter{
 				{

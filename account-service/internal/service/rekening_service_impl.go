@@ -1,10 +1,13 @@
 package service
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/ilhamsyaputra/bank-api-gorm/internal/data/data"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/data/request"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/data/response"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/entity"
@@ -12,6 +15,7 @@ import (
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/enum"
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/helper"
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
+	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -21,15 +25,22 @@ type RekeningServiceImpl struct {
 	validate           *validator.Validate
 	log                *logger.Logger
 	db                 *gorm.DB
+	redis_             *redis.Client
+
+	RedisService
 }
 
-func InitRekeningRepositoryImpl(db *gorm.DB, repo repository.RekeningRepository, validator *validator.Validate, logger *logger.Logger) RekeningService {
+func InitRekeningRepositoryImpl(ctx context.Context, db *gorm.DB, repo repository.RekeningRepository, redis_ *redis.Client, validator *validator.Validate, logger *logger.Logger) RekeningService {
+	redisService := InitRedisService(ctx, redis_, logger)
+
 	return &RekeningServiceImpl{
 		validate: validator,
 		log:      logger,
 		db:       db,
+		redis_:   redis_,
 
 		rekeningRepository: repo,
+		RedisService:       redisService,
 	}
 }
 
@@ -52,13 +63,13 @@ func (service *RekeningServiceImpl) Tabung(rekening request.TabungRequest) (resp
 	err = service.rekeningRepository.CheckRekening(tx, rekening_)
 	if err == gorm.ErrRecordNotFound {
 		err = fmt.Errorf("nomor rekening tidak valid")
-		helper.ServiceError(&err, service.log)
+		helper.ServiceError(err, service.log)
 		return
 	}
 
 	err = service.rekeningRepository.UpdateSaldo(tx, rekening_, rekening.Nominal)
 	if err != nil {
-		helper.ServiceError(&err, service.log)
+		helper.ServiceError(err, service.log)
 		return
 	}
 
@@ -72,13 +83,13 @@ func (service *RekeningServiceImpl) Tabung(rekening request.TabungRequest) (resp
 
 	err = service.rekeningRepository.CatatTransaksi(tx, transaksi_)
 	if err != nil {
-		helper.ServiceError(&err, service.log)
+		helper.ServiceError(err, service.log)
 		return
 	}
 
 	saldo, err := service.rekeningRepository.GetSaldo(tx, rekening_)
 	if err != nil {
-		helper.ServiceError(&err, service.log)
+		helper.ServiceError(err, service.log)
 		return
 	}
 
@@ -106,25 +117,25 @@ func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp r
 	err = service.rekeningRepository.CheckRekening(tx, rekening_)
 	if err == gorm.ErrRecordNotFound {
 		err = fmt.Errorf("nomor rekening tidak valid")
-		helper.ServiceError(&err, service.log)
+		helper.ServiceError(err, service.log)
 		return
 	}
 
 	saldo, err := service.rekeningRepository.GetSaldo(tx, rekening_)
 	if err != nil {
-		helper.ServiceError(&err, service.log)
+		helper.ServiceError(err, service.log)
 		return
 	}
 
 	if rekening.Nominal > saldo {
 		err = fmt.Errorf("saldo tidak mencukupi untuk melakukan transaksi tarik")
-		helper.ServiceError(&err, service.log)
+		helper.ServiceError(err, service.log)
 		return
 	}
 
 	err = service.rekeningRepository.UpdateSaldo(tx, rekening_, -rekening.Nominal)
 	if err != nil {
-		helper.ServiceError(&err, service.log)
+		helper.ServiceError(err, service.log)
 		return
 	}
 
@@ -138,13 +149,13 @@ func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp r
 
 	err = service.rekeningRepository.CatatTransaksi(tx, transaksi_)
 	if err != nil {
-		helper.ServiceError(&err, service.log)
+		helper.ServiceError(err, service.log)
 		return
 	}
 
 	saldo, err = service.rekeningRepository.GetSaldo(tx, rekening_)
 	if err != nil {
-		helper.ServiceError(&err, service.log)
+		helper.ServiceError(err, service.log)
 		return
 	}
 
@@ -153,7 +164,7 @@ func (service *RekeningServiceImpl) Tarik(rekening request.TarikRequest) (resp r
 	return response.TarikResponse{Saldo: saldo}, nil
 }
 
-func (s *RekeningServiceImpl) Transfer(params request.TransaksiRequest) (resp response.TransferResponse, err error) {
+func (s *RekeningServiceImpl) Transfer(ctx context.Context, params request.TransaksiRequest) (resp response.TransferResponse, err error) {
 	s.log.Info(logrus.Fields{}, params, "TRANSAKSI START")
 	err = s.validate.Struct(params)
 	if err != nil {
@@ -171,7 +182,7 @@ func (s *RekeningServiceImpl) Transfer(params request.TransaksiRequest) (resp re
 	err = s.rekeningRepository.CheckRekening(tx, rekeningAsal)
 	if err == gorm.ErrRecordNotFound {
 		err = fmt.Errorf("nomor rekening asal tidak valid")
-		helper.ServiceError(&err, s.log)
+		helper.ServiceError(err, s.log)
 		return
 	}
 
@@ -181,31 +192,31 @@ func (s *RekeningServiceImpl) Transfer(params request.TransaksiRequest) (resp re
 	err = s.rekeningRepository.CheckRekening(tx, rekeningTujuan)
 	if err == gorm.ErrRecordNotFound {
 		err = fmt.Errorf("nomor rekening tujuan tidak valid")
-		helper.ServiceError(&err, s.log)
+		helper.ServiceError(err, s.log)
 		return
 	}
 
 	saldoRekeningAsal, err := s.rekeningRepository.GetSaldo(tx, rekeningAsal)
 	if err != nil {
-		helper.ServiceError(&err, s.log)
+		helper.ServiceError(err, s.log)
 		return
 	}
 
 	if params.Nominal > saldoRekeningAsal {
 		err = fmt.Errorf("saldo tidak mencukupi untuk melakukan transaksi transfer")
-		helper.ServiceError(&err, s.log)
+		helper.ServiceError(err, s.log)
 		return
 	}
 
 	err = s.rekeningRepository.UpdateSaldo(tx, rekeningAsal, -params.Nominal)
 	if err != nil {
-		helper.ServiceError(&err, s.log)
+		helper.ServiceError(err, s.log)
 		return
 	}
 
 	err = s.rekeningRepository.UpdateSaldo(tx, rekeningTujuan, params.Nominal)
 	if err != nil {
-		helper.ServiceError(&err, s.log)
+		helper.ServiceError(err, s.log)
 		return
 	}
 
@@ -219,17 +230,32 @@ func (s *RekeningServiceImpl) Transfer(params request.TransaksiRequest) (resp re
 
 	err = s.rekeningRepository.CatatTransaksi(tx, transaksi_)
 	if err != nil {
-		helper.ServiceError(&err, s.log)
+		helper.ServiceError(err, s.log)
 		return
 	}
 
 	saldoRekeningAsal, err = s.rekeningRepository.GetSaldo(tx, rekeningAsal)
 	if err != nil {
-		helper.ServiceError(&err, s.log)
+		helper.ServiceError(err, s.log)
 		return
 	}
 
 	defer s.log.Info(logrus.Fields{}, nil, "TRANSAKSI TRANSFER END")
+
+	dataRedis := data.RedisPublish{
+		Event:            "TRANSFER",
+		NoRekeningDebit:  params.NoRekeningAsal,
+		NoRekeningKredit: params.NoRekeningTujuan,
+		NominalKredit:    params.Nominal,
+		NominalDebit:     params.Nominal,
+		TanggalTransaksi: time.Now().Format("01-02-2006"),
+	}
+
+	err = s.RedisService.Publish(ctx, s.redis_, dataRedis)
+	if err != nil {
+		helper.ServiceError(err, s.log)
+		return
+	}
 
 	resp = response.TransferResponse{Saldo: saldoRekeningAsal}
 
@@ -252,7 +278,7 @@ func (s *RekeningServiceImpl) GetSaldo(noRekening string) (resp response.GetSald
 		if err == gorm.ErrRecordNotFound {
 			err = fmt.Errorf("nomor rekening tidak valid")
 		}
-		helper.ServiceError(&err, s.log)
+		helper.ServiceError(err, s.log)
 		return
 	}
 

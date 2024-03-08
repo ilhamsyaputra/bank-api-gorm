@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"journal-service/config"
 	"journal-service/internal/controller"
 	"journal-service/internal/repository"
@@ -10,6 +11,7 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	viper_ := config.InitViper()
 
 	// Service Name
@@ -18,8 +20,10 @@ func main() {
 	// Dependency injection
 	logger := logger.NewLogger(SERVICE)
 	db := config.InitDatabase(viper_, logger)
+
+	redis_ := config.InitRedis(ctx, viper_, logger)
 	repository := repository.InitRepository(db, logger)
-	service := service.InitService(db, repository, logger)
+	service := service.InitService(ctx, db, repository, redis_, logger)
 	controller := controller.InitController(service, logger)
 	server := server.InitServer(controller)
 
