@@ -1,12 +1,10 @@
 package controller
 
 import (
-	"fmt"
-	"net/http"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/data/response"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/service"
+	"github.com/ilhamsyaputra/bank-api-gorm/pkg/helper"
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
 )
 
@@ -26,26 +24,23 @@ func (controller *TransaksiController) GetMutasi(ctx *fiber.Ctx) error {
 
 	response_ := response.Response{}
 
-	fmt.Println("MASUK CONTROLLER")
-	fmt.Println("MASUK CONTROLLER")
-
 	resp, err := controller.transaksiService.GetMutasi(noRekening)
-
 	if err != nil {
+		helper.ControllerError(&err, controller.logger)
 		response_ = response.Response{
-			Code:   http.StatusBadRequest,
+			Code:   fiber.StatusBadRequest,
 			Status: "error",
 			Remark: err.Error(),
 		}
-		return ctx.Status(http.StatusBadRequest).JSON(response_)
+		return ctx.Status(fiber.StatusBadRequest).JSON(response_)
 	}
 
 	response_ = response.Response{
-		Code:   http.StatusOK,
+		Code:   fiber.StatusOK,
 		Status: "success",
 		Remark: "get mutasi berhasil",
 		Data:   resp,
 	}
 
-	return ctx.Status(http.StatusOK).JSON(response_)
+	return ctx.Status(fiber.StatusOK).JSON(response_)
 }

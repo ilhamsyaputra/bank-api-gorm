@@ -27,27 +27,35 @@ func (controller *RekeningController) Tabung(ctx *fiber.Ctx) error {
 	response_ := response.Response{}
 
 	err := ctx.BodyParser(&request_)
-	helper.ControllerErrorHelper(ctx, err, controller.logger)
+	if err != nil {
+		helper.ControllerError(&err, controller.logger)
+		response_ = response.Response{
+			Code:   fiber.StatusBadRequest,
+			Status: "error",
+			Remark: "terjadi kesalahan pada sistem, harap hubungi technical support",
+		}
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response_)
+	}
 
 	resp, err := controller.rekeningService.Tabung(request_)
-
 	if err != nil {
+		helper.ControllerError(&err, controller.logger)
 		response_ = response.Response{
-			Code:   http.StatusBadRequest,
+			Code:   fiber.StatusBadRequest,
 			Status: "error",
 			Remark: err.Error(),
 		}
-		return ctx.Status(http.StatusBadRequest).JSON(response_)
+		return ctx.Status(fiber.StatusBadRequest).JSON(response_)
 	}
 
 	response_ = response.Response{
-		Code:   http.StatusCreated,
+		Code:   fiber.StatusOK,
 		Status: "success",
 		Remark: "transaksi tabung berhasil",
 		Data:   resp,
 	}
 
-	return ctx.Status(http.StatusOK).JSON(response_)
+	return ctx.Status(fiber.StatusOK).JSON(response_)
 }
 
 func (controller *RekeningController) Tarik(ctx *fiber.Ctx) error {
@@ -55,13 +63,21 @@ func (controller *RekeningController) Tarik(ctx *fiber.Ctx) error {
 	response_ := response.Response{}
 
 	err := ctx.BodyParser(&request_)
-	helper.ControllerErrorHelper(ctx, err, controller.logger)
+	if err != nil {
+		helper.ControllerError(&err, controller.logger)
+		response_ = response.Response{
+			Code:   fiber.StatusBadRequest,
+			Status: "error",
+			Remark: "terjadi kesalahan pada sistem, harap hubungi technical support",
+		}
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response_)
+	}
 
 	resp, err := controller.rekeningService.Tarik(request_)
-
 	if err != nil {
+		helper.ControllerError(&err, controller.logger)
 		response_ = response.Response{
-			Code:   http.StatusBadRequest,
+			Code:   fiber.StatusBadRequest,
 			Status: "error",
 			Remark: err.Error(),
 		}
@@ -69,13 +85,13 @@ func (controller *RekeningController) Tarik(ctx *fiber.Ctx) error {
 	}
 
 	response_ = response.Response{
-		Code:   http.StatusCreated,
+		Code:   fiber.StatusCreated,
 		Status: "success",
 		Remark: "transaksi tarik berhasil",
 		Data:   resp,
 	}
 
-	return ctx.Status(http.StatusOK).JSON(response_)
+	return ctx.Status(fiber.StatusOK).JSON(response_)
 }
 
 func (controller *RekeningController) Transfer(ctx *fiber.Ctx) error {
@@ -83,13 +99,21 @@ func (controller *RekeningController) Transfer(ctx *fiber.Ctx) error {
 	response_ := response.Response{}
 
 	err := ctx.BodyParser(&request_)
-	helper.ControllerErrorHelper(ctx, err, controller.logger)
+	if err != nil {
+		helper.ControllerError(&err, controller.logger)
+		response_ = response.Response{
+			Code:   fiber.StatusBadRequest,
+			Status: "error",
+			Remark: "terjadi kesalahan pada sistem, harap hubungi technical support",
+		}
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response_)
+	}
 
 	resp, err := controller.rekeningService.Transfer(request_)
-
 	if err != nil {
+		helper.ControllerError(&err, controller.logger)
 		response_ = response.Response{
-			Code:   http.StatusBadRequest,
+			Code:   fiber.StatusBadRequest,
 			Status: "error",
 			Remark: err.Error(),
 		}
@@ -97,13 +121,13 @@ func (controller *RekeningController) Transfer(ctx *fiber.Ctx) error {
 	}
 
 	response_ = response.Response{
-		Code:   http.StatusCreated,
+		Code:   fiber.StatusCreated,
 		Status: "success",
-		Remark: "transaksi tarik berhasil",
+		Remark: "transaksi transfer berhasil",
 		Data:   resp,
 	}
 
-	return ctx.Status(http.StatusOK).JSON(response_)
+	return ctx.Status(fiber.StatusOK).JSON(response_)
 }
 
 func (controller *RekeningController) CekSaldo(ctx *fiber.Ctx) error {
@@ -112,22 +136,22 @@ func (controller *RekeningController) CekSaldo(ctx *fiber.Ctx) error {
 	response_ := response.Response{}
 
 	resp, err := controller.rekeningService.GetSaldo(noRekening)
-
 	if err != nil {
+		helper.ControllerError(&err, controller.logger)
 		response_ = response.Response{
-			Code:   http.StatusBadRequest,
+			Code:   fiber.StatusBadRequest,
 			Status: "error",
 			Remark: err.Error(),
 		}
-		return ctx.Status(http.StatusBadRequest).JSON(response_)
+		return ctx.Status(fiber.StatusBadRequest).JSON(response_)
 	}
 
 	response_ = response.Response{
-		Code:   http.StatusOK,
+		Code:   fiber.StatusOK,
 		Status: "success",
-		Remark: "get saldo berhasil",
+		Remark: "cek saldo berhasil",
 		Data:   resp,
 	}
 
-	return ctx.Status(http.StatusOK).JSON(response_)
+	return ctx.Status(fiber.StatusOK).JSON(response_)
 }
