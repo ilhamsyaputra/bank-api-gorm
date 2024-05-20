@@ -102,7 +102,21 @@ func (service *RekeningServiceImpl) Tabung(ctx context.Context, params request.T
 		TanggalTransaksi: time.Now().Format("01-02-2006"),
 	}
 
-	err = service.RedisService.Publish(ctx, service.redis_, dataRedis)
+	err = service.RedisService.Publish(ctx, service.redis_, "journal", dataRedis)
+	if err != nil {
+		helper.ServiceError(err, service.log)
+		return
+	}
+
+	dataRedisMutasi := data.RedisPublishMutasi{
+		Event:            "SETOR",
+		NoRekening:       params.NoRekening,
+		Nominal:          params.Nominal,
+		JenisTransaksi:   enum.TipeTransaksi.Kredit,
+		TanggalTransaksi: time.Now().Format("01-02-2006"),
+	}
+
+	err = service.RedisService.Publish(ctx, service.redis_, "mutasi", dataRedisMutasi)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -183,7 +197,21 @@ func (service *RekeningServiceImpl) Tarik(ctx context.Context, params request.Ta
 		TanggalTransaksi: time.Now().Format("01-02-2006"),
 	}
 
-	err = service.RedisService.Publish(ctx, service.redis_, dataRedis)
+	err = service.RedisService.Publish(ctx, service.redis_, "journal", dataRedis)
+	if err != nil {
+		helper.ServiceError(err, service.log)
+		return
+	}
+
+	dataRedisMutasi := data.RedisPublishMutasi{
+		Event:            "TARIK",
+		NoRekening:       params.NoRekening,
+		Nominal:          params.Nominal,
+		JenisTransaksi:   enum.TipeTransaksi.Debit,
+		TanggalTransaksi: time.Now().Format("01-02-2006"),
+	}
+
+	err = service.RedisService.Publish(ctx, service.redis_, "mutasi", dataRedisMutasi)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -281,7 +309,7 @@ func (s *RekeningServiceImpl) Transfer(ctx context.Context, params request.Trans
 		TanggalTransaksi: time.Now().Format("01-02-2006"),
 	}
 
-	err = s.RedisService.Publish(ctx, s.redis_, dataRedis)
+	err = s.RedisService.Publish(ctx, s.redis_, "journal", dataRedis)
 	if err != nil {
 		helper.ServiceError(err, s.log)
 		return

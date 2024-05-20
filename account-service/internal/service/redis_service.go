@@ -8,7 +8,7 @@ import (
 )
 
 type RedisService interface {
-	Publish(context.Context, *redis.Client, interface{}) error
+	Publish(context.Context, *redis.Client, string, interface{}) error
 }
 
 type RedisServiceImpl struct {
@@ -21,7 +21,7 @@ func InitRedisService(ctx context.Context, redisClient *redis.Client, logger *lo
 	}
 }
 
-func (s *RedisServiceImpl) Publish(ctx context.Context, redisClient *redis.Client, data interface{}) (err error) {
-	err = redisClient.Publish(ctx, "journal", data).Err()
+func (s *RedisServiceImpl) Publish(ctx context.Context, redisClient *redis.Client, channel string, data interface{}) (err error) {
+	err = redisClient.Publish(ctx, channel, data).Err()
 	return
 }
