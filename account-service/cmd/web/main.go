@@ -10,6 +10,7 @@ import (
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/server"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/service"
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
+	"go.opentelemetry.io/otel"
 )
 
 func main() {
@@ -27,7 +28,7 @@ func main() {
 		}
 	}()
 
-	tracer := tracerProvider.Tracer("account-service")
+	tracer := otel.Tracer("account-service")
 
 	// Dependency injection
 	logger := logger.NewLogger(SERVICE)

@@ -12,7 +12,6 @@ type Controller struct {
 	NasabahController
 	RekeningController
 	TransaksiController
-	Tracer trace.Tracer
 }
 
 func InitController(ctx context.Context, service *service.Service, logger *logger.Logger, tracer trace.Tracer) *Controller {
@@ -24,6 +23,5 @@ func InitController(ctx context.Context, service *service.Service, logger *logge
 		NasabahController:   *nasabahController,
 		RekeningController:  *rekeningController,
 		TransaksiController: *transaksiController,
-		Tracer:              tracer,
 	}
 }

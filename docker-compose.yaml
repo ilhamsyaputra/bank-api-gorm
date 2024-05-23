@@ -74,10 +74,14 @@ services:
       - 20027:20027
     depends_on:
       - postgres
+      - jaeger
     restart:
       always
     env_file:
       - ./mutasi-service/config.env
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - OTEL_EXPORTER_OTLP_INSECURE=true
 
   jaeger:
     container_name: jaeger

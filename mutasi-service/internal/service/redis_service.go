@@ -9,6 +9,8 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 type RedisService interface {
@@ -55,7 +57,10 @@ func (s *RedisServiceImpl) Listen(ctx context.Context, redisClient *redis.Client
 			}
 			s.logger.Info(logrus.Fields{"received_message": msg.Payload, "event": mutasi.Event}, msg.Payload, "MESSAGE RECEIVED: "+mutasi.Event)
 
-			err = s.MutasiService.CreateMutasi(mutasi)
+			carrier := propagation.MapCarrier(mutasi.TraceContext)
+			ctx = otel.GetTextMapPropagator().Extract(ctx, carrier)
+
+			err = s.MutasiService.CreateMutasi(ctx, mutasi)
 			if err != nil {
 				s.logger.Error(logrus.Fields{"error": err}, mutasi, "ERROR on CreateMutasi")
 			}

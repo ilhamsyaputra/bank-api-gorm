@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+	"fmt"
 	"mutasi-service/internal/data/request"
 	"mutasi-service/internal/entity"
 	"mutasi-service/pkg/logger"
@@ -13,6 +15,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 )
 
@@ -21,18 +25,23 @@ type MutasiServiceImpl struct {
 	validate         *validator.Validate
 	log              *logger.Logger
 	db               *gorm.DB
+	tracer           trace.Tracer
 }
 
-func InitMutasiServiceImpl(db *gorm.DB, repo repository.MutasiRepository, validator *validator.Validate, logger *logger.Logger) MutasiService {
+func InitMutasiServiceImpl(db *gorm.DB, repo repository.MutasiRepository, validator *validator.Validate, logger *logger.Logger, tracer trace.Tracer) MutasiService {
 	return &MutasiServiceImpl{
 		mutasiRepository: repo,
 		validate:         validator,
 		log:              logger,
 		db:               db,
+		tracer:           tracer,
 	}
 }
 
-func (service *MutasiServiceImpl) CreateMutasi(mutasi request.CreateMutasi) (err error) {
+func (service *MutasiServiceImpl) CreateMutasi(ctx context.Context, mutasi request.CreateMutasi) (err error) {
+	_, span := service.tracer.Start(ctx, "MutasiServiceImpl/CreateMutasi", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", mutasi))))
+	defer span.End()
+
 	service.log.Info(logrus.Fields{}, mutasi, "CREATEMUTASI START")
 
 	err = service.validate.Struct(mutasi)

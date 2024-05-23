@@ -39,7 +39,7 @@ func (c *MutasiController) CreateMutasi(ctx *fiber.Ctx) (err error) {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response_)
 	}
 
-	err = c.mutasiService.CreateMutasi(request_)
+	err = c.mutasiService.CreateMutasi(ctx.Context(), request_)
 	if err != nil {
 		c.logger.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Controller")
 

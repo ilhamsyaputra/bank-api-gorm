@@ -1,9 +1,10 @@
 package service
 
 import (
+	"context"
 	"mutasi-service/internal/data/request"
 )
 
 type MutasiService interface {
-	CreateMutasi(mutasi request.CreateMutasi) error
+	CreateMutasi(ctx context.Context, mutasi request.CreateMutasi) error
 }

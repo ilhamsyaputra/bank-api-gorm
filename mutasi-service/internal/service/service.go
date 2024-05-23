@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 )
 
@@ -16,13 +17,12 @@ type Service struct {
 	validator  *validator.Validate
 	logger     *logger.Logger
 	db         *gorm.DB
-	redis_     *redis.Client
 
 	MutasiService
 }
 
-func InitService(ctx context.Context, db *gorm.DB, repository *repository.Repository, redis_ *redis.Client, logger *logger.Logger) *Service {
-	mutasiService := InitMutasiServiceImpl(db, repository.MutasiRepository, validator.New(), logger)
+func InitService(ctx context.Context, db *gorm.DB, repository *repository.Repository, redis_ *redis.Client, logger *logger.Logger, tracer trace.Tracer) *Service {
+	mutasiService := InitMutasiServiceImpl(db, repository.MutasiRepository, validator.New(), logger, tracer)
 	redisService := InitRedisService(ctx, redis_, mutasiService, logger)
 	redisService.Listen(ctx, redis_, "mutasi")
 
@@ -31,7 +31,6 @@ func InitService(ctx context.Context, db *gorm.DB, repository *repository.Reposi
 		validator:  validator.New(),
 		logger:     logger,
 		db:         db,
-		redis_:     redis_,
 
 		MutasiService: mutasiService,
 	}
