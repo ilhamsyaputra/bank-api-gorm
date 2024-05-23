@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
+	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 )
 
@@ -9,18 +10,20 @@ type Repository struct {
 	NasabahRepository
 	RekeningRepository
 	TransaksiRepository
-	db  *gorm.DB
-	log *logger.Logger
+	db     *gorm.DB
+	log    *logger.Logger
+	tracer trace.Tracer
 }
 
-func InitRepository(db *gorm.DB, log *logger.Logger) *Repository {
-	nasabahRepository := InitNasabahRepositoryImpl(db, log)
-	rekeningRepository := InitRekeningRepositoryImpl(db, log)
-	transaksiRepository := InitTransaksiRepositoryImpl(db, log)
+func InitRepository(db *gorm.DB, log *logger.Logger, tracer trace.Tracer) *Repository {
+	nasabahRepository := InitNasabahRepositoryImpl(db, log, tracer)
+	rekeningRepository := InitRekeningRepositoryImpl(db, log, tracer)
+	transaksiRepository := InitTransaksiRepositoryImpl(db, log, tracer)
 
 	return &Repository{
-		db:  db,
-		log: log,
+		db:     db,
+		log:    log,
+		tracer: tracer,
 
 		NasabahRepository:   nasabahRepository,
 		RekeningRepository:  rekeningRepository,

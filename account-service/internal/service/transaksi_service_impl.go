@@ -1,6 +1,9 @@
 package service
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/data/response"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/entity"
@@ -9,6 +12,8 @@ import (
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
 	"github.com/jinzhu/copier"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 )
 
@@ -17,19 +22,24 @@ type TransaksiServiceImpl struct {
 	validate            *validator.Validate
 	log                 *logger.Logger
 	db                  *gorm.DB
+	tracer              trace.Tracer
 }
 
-func InitTransaksiServiceImpl(db *gorm.DB, repo repository.TransaksiRepository, validator *validator.Validate, logger *logger.Logger) TransaksiService {
+func InitTransaksiServiceImpl(db *gorm.DB, repo repository.TransaksiRepository, validator *validator.Validate, logger *logger.Logger, tracer trace.Tracer) TransaksiService {
 	return &TransaksiServiceImpl{
 		validate: validator,
 		log:      logger,
 		db:       db,
+		tracer:   tracer,
 
 		transaksiRepository: repo,
 	}
 }
 
-func (s *TransaksiServiceImpl) GetMutasi(noRekening string) (resp []response.GetMutasi, err error) {
+func (s *TransaksiServiceImpl) GetMutasi(ctx context.Context, noRekening string) (resp []response.GetMutasi, err error) {
+	tracerCtx, span := s.tracer.Start(ctx, "RekeningServiceImpl/GetSaldo", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", noRekening))))
+	defer span.End()
+
 	s.log.Info(logrus.Fields{}, noRekening, "GET MUTASI START")
 
 	tx := s.db.Begin()
@@ -40,7 +50,7 @@ func (s *TransaksiServiceImpl) GetMutasi(noRekening string) (resp []response.Get
 		NoRekening: noRekening,
 	}
 
-	result, err := s.transaksiRepository.GetMutasi(tx, rekening)
+	result, err := s.transaksiRepository.GetMutasi(tracerCtx, tx, rekening)
 	if err != nil {
 		helper.ServiceError(err, s.log)
 		return

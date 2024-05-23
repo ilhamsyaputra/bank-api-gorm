@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -14,6 +15,8 @@ import (
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -23,18 +26,23 @@ type NasabahServiceImpl struct {
 	validate          *validator.Validate
 	log               *logger.Logger
 	db                *gorm.DB
+	tracer            trace.Tracer
 }
 
-func InitNasabahRepositoryImpl(db *gorm.DB, repo repository.NasabahRepository, validator *validator.Validate, logger *logger.Logger) NasabahService {
+func InitNasabahRepositoryImpl(db *gorm.DB, repo repository.NasabahRepository, validator *validator.Validate, logger *logger.Logger, tracer trace.Tracer) NasabahService {
 	return &NasabahServiceImpl{
 		nasabahRepository: repo,
 		validate:          validator,
 		log:               logger,
 		db:                db,
+		tracer:            tracer,
 	}
 }
 
-func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp response.DaftarResponse, err error) {
+func (service *NasabahServiceImpl) Daftar(ctx context.Context, nasabah request.DaftarRequest) (resp response.DaftarResponse, err error) {
+	tracerCtx, span := service.tracer.Start(ctx, "NasabahServiceImpl/Daftar", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", nasabah))))
+	defer span.End()
+
 	service.log.Info(logrus.Fields{}, nasabah, "Daftar Nasabah START")
 	err = service.validate.Struct(nasabah)
 	if err != nil {
@@ -60,18 +68,18 @@ func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp r
 		KodeCabang: nasabah.KodeCabang,
 	}
 
-	validateUser := service.nasabahRepository.ValidateNewUser(tx, nasabahModel)
+	validateUser := service.nasabahRepository.ValidateNewUser(tracerCtx, tx, nasabahModel)
 	if validateUser.RowsAffected != 0 {
 		err = fmt.Errorf("tidak dapat melakukan registrasi. data nik atau no_hp sudah terdaftar di sistem")
 		helper.ServiceError(err, service.log)
 		return
 	}
 
-	noNasabahCounter := service.nasabahRepository.GetNoNasabah(tx)
+	noNasabahCounter := service.nasabahRepository.GetNoNasabah(tracerCtx, tx)
 	noNasabah := nasabah.KodeCabang + helper.Zfill(noNasabahCounter, "0", 6)
 	nasabahModel.NoNasabah = noNasabah
 
-	err = service.nasabahRepository.DaftarNasabah(tx, nasabahModel)
+	err = service.nasabahRepository.DaftarNasabah(tracerCtx, tx, nasabahModel)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -79,7 +87,7 @@ func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp r
 
 	// registrasi rekening
 	BANK_CODE_FILLER := "99"
-	noRekeningCounter := service.nasabahRepository.GetNoRekening(tx)
+	noRekeningCounter := service.nasabahRepository.GetNoRekening(tracerCtx, tx)
 	noRekening := BANK_CODE_FILLER + nasabah.KodeCabang + helper.Zfill(noRekeningCounter, "0", 8)
 
 	rekening := entity.Rekening{
@@ -87,22 +95,25 @@ func (service *NasabahServiceImpl) Daftar(nasabah request.DaftarRequest) (resp r
 		NoRekening: noRekening,
 	}
 
-	err = service.nasabahRepository.DaftarRekening(tx, rekening)
+	err = service.nasabahRepository.DaftarRekening(tracerCtx, tx, rekening)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
 	}
 
 	// update counter
-	service.nasabahRepository.UpdateNoNasabah(tx)
-	service.nasabahRepository.UpdateNoRekening(tx)
+	service.nasabahRepository.UpdateNoNasabah(tracerCtx, tx)
+	service.nasabahRepository.UpdateNoRekening(tracerCtx, tx)
 
 	defer service.log.Info(logrus.Fields{}, noRekening, "Daftar Nasabah END")
 
 	return response.DaftarResponse{NoNasabah: noNasabah, NoRekening: noRekening}, nil
 }
 
-func (s *NasabahServiceImpl) Login(params request.LoginRequest) (resp response.LoginResponse, err error) {
+func (s *NasabahServiceImpl) Login(ctx context.Context, params request.LoginRequest) (resp response.LoginResponse, err error) {
+	tracerCtx, span := s.tracer.Start(ctx, "NasabahServiceImpl/Login", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", params))))
+	defer span.End()
+
 	s.log.Info(logrus.Fields{}, params, "LOGIN START")
 	JWT_SECRET := viper.GetString("JWT_SECRET")
 
@@ -120,7 +131,7 @@ func (s *NasabahServiceImpl) Login(params request.LoginRequest) (resp response.L
 		NoNasabah: params.NoNasabah,
 		Pin:       params.Pin,
 	}
-	result, err := s.nasabahRepository.Login(tx, nasabah_)
+	result, err := s.nasabahRepository.Login(tracerCtx, tx, nasabah_)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			err = fmt.Errorf("tidak dapat melakukan login, user tidak ditemukan")

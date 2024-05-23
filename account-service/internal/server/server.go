@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/controller"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/middleware"
@@ -8,11 +10,13 @@ import (
 )
 
 type Server struct {
+	ctx        context.Context
 	controller controller.Controller
 }
 
-func InitServer(controller *controller.Controller) *Server {
+func InitServer(ctx context.Context, controller *controller.Controller) *Server {
 	return &Server{
+		ctx:        ctx,
 		controller: *controller,
 	}
 }

@@ -36,6 +36,10 @@ services:
       always
     env_file:
       - ./account-service/config.env
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - OTEL_EXPORTER_OTLP_INSECURE=true
+      - OTEL_TRACES_EXPORTER=jaeger
 
   postgres-journal:
     container_name: postgres-journal
@@ -74,3 +78,14 @@ services:
       always
     env_file:
       - ./mutasi-service/config.env
+
+  jaeger:
+    container_name: jaeger
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+    restart:
+      on-failure
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -9,21 +10,30 @@ import (
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/service"
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/helper"
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type NasabahController struct {
+	ctx            context.Context
 	nasabahService service.NasabahService
 	logger         *logger.Logger
+	tracer         trace.Tracer
 }
 
-func InitNasabahController(service service.NasabahService, logger *logger.Logger) *NasabahController {
+func InitNasabahController(ctx context.Context, service service.NasabahService, logger *logger.Logger, tracer trace.Tracer) *NasabahController {
 	return &NasabahController{
+		ctx:            ctx,
 		nasabahService: service,
 		logger:         logger,
+		tracer:         tracer,
 	}
 }
 
 func (controller *NasabahController) Daftar(ctx *fiber.Ctx) (err error) {
+	tracerCtx, span := controller.tracer.Start(controller.ctx, "NasabahController/Daftar", trace.WithAttributes(attribute.String("test", "test")))
+	defer span.End()
+
 	request_ := request.DaftarRequest{}
 	response_ := response.Response{}
 
@@ -38,7 +48,7 @@ func (controller *NasabahController) Daftar(ctx *fiber.Ctx) (err error) {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response_)
 	}
 
-	resp, err := controller.nasabahService.Daftar(request_)
+	resp, err := controller.nasabahService.Daftar(tracerCtx, request_)
 	if err != nil {
 		helper.ControllerError(err, controller.logger)
 		response_ = response.Response{
@@ -60,6 +70,9 @@ func (controller *NasabahController) Daftar(ctx *fiber.Ctx) (err error) {
 }
 
 func (controller *NasabahController) Login(ctx *fiber.Ctx) (err error) {
+	tracerCtx, span := controller.tracer.Start(controller.ctx, "NasabahController/Login", trace.WithAttributes(attribute.String("test", "test")))
+	defer span.End()
+
 	request_ := request.LoginRequest{}
 	response_ := response.Response{}
 
@@ -69,7 +82,7 @@ func (controller *NasabahController) Login(ctx *fiber.Ctx) (err error) {
 		return
 	}
 
-	resp, err := controller.nasabahService.Login(request_)
+	resp, err := controller.nasabahService.Login(tracerCtx, request_)
 	if err != nil {
 		helper.ControllerError(err, controller.logger)
 		response_ = response.Response{

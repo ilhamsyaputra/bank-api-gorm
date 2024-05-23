@@ -17,6 +17,8 @@ import (
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 )
 
@@ -26,18 +28,20 @@ type RekeningServiceImpl struct {
 	log                *logger.Logger
 	db                 *gorm.DB
 	redis_             *redis.Client
+	tracer             trace.Tracer
 
 	RedisService
 }
 
-func InitRekeningRepositoryImpl(ctx context.Context, db *gorm.DB, repo repository.RekeningRepository, redis_ *redis.Client, validator *validator.Validate, logger *logger.Logger) RekeningService {
-	redisService := InitRedisService(ctx, redis_, logger)
+func InitRekeningRepositoryImpl(ctx context.Context, db *gorm.DB, repo repository.RekeningRepository, redis_ *redis.Client, validator *validator.Validate, logger *logger.Logger, tracer trace.Tracer) RekeningService {
+	redisService := InitRedisService(ctx, redis_, logger, tracer)
 
 	return &RekeningServiceImpl{
 		validate: validator,
 		log:      logger,
 		db:       db,
 		redis_:   redis_,
+		tracer:   tracer,
 
 		rekeningRepository: repo,
 		RedisService:       redisService,
@@ -45,6 +49,9 @@ func InitRekeningRepositoryImpl(ctx context.Context, db *gorm.DB, repo repositor
 }
 
 func (service *RekeningServiceImpl) Tabung(ctx context.Context, params request.TabungRequest) (resp response.TabungResponse, err error) {
+	tracerCtx, span := service.tracer.Start(ctx, "RekeningServiceImpl/Tabung", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", params))))
+	defer span.End()
+
 	service.log.Info(logrus.Fields{}, params, "TRANSAKSI TABUNG START")
 	err = service.validate.Struct(params)
 	if err != nil {
@@ -60,14 +67,14 @@ func (service *RekeningServiceImpl) Tabung(ctx context.Context, params request.T
 		NoRekening: params.NoRekening,
 	}
 
-	err = service.rekeningRepository.CheckRekening(tx, rekening_)
+	err = service.rekeningRepository.CheckRekening(tracerCtx, tx, rekening_)
 	if err == gorm.ErrRecordNotFound {
 		err = fmt.Errorf("nomor rekening tidak valid")
 		helper.ServiceError(err, service.log)
 		return
 	}
 
-	err = service.rekeningRepository.UpdateSaldo(tx, rekening_, params.Nominal)
+	err = service.rekeningRepository.UpdateSaldo(tracerCtx, tx, rekening_, params.Nominal)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -81,13 +88,13 @@ func (service *RekeningServiceImpl) Tabung(ctx context.Context, params request.T
 		Nominal:          params.Nominal,
 	}
 
-	err = service.rekeningRepository.CatatTransaksi(tx, transaksi_)
+	err = service.rekeningRepository.CatatTransaksi(tracerCtx, tx, transaksi_)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
 	}
 
-	saldo, err := service.rekeningRepository.GetSaldo(tx, rekening_)
+	saldo, err := service.rekeningRepository.GetSaldo(tracerCtx, tx, rekening_)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -102,7 +109,7 @@ func (service *RekeningServiceImpl) Tabung(ctx context.Context, params request.T
 		TanggalTransaksi: time.Now().Format("01-02-2006"),
 	}
 
-	err = service.RedisService.Publish(ctx, service.redis_, "journal", dataRedis)
+	err = service.RedisService.Publish(ctx, tracerCtx, service.redis_, "journal", dataRedis)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -116,7 +123,7 @@ func (service *RekeningServiceImpl) Tabung(ctx context.Context, params request.T
 		TanggalTransaksi: time.Now().Format("01-02-2006"),
 	}
 
-	err = service.RedisService.Publish(ctx, service.redis_, "mutasi", dataRedisMutasi)
+	err = service.RedisService.Publish(ctx, tracerCtx, service.redis_, "mutasi", dataRedisMutasi)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -128,6 +135,9 @@ func (service *RekeningServiceImpl) Tabung(ctx context.Context, params request.T
 }
 
 func (service *RekeningServiceImpl) Tarik(ctx context.Context, params request.TarikRequest) (resp response.TarikResponse, err error) {
+	tracerCtx, span := service.tracer.Start(ctx, "RekeningServiceImpl/Tarik", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", params))))
+	defer span.End()
+
 	service.log.Info(logrus.Fields{}, params, "TRANSAKSI TARIK START")
 	err = service.validate.Struct(params)
 	if err != nil {
@@ -143,14 +153,14 @@ func (service *RekeningServiceImpl) Tarik(ctx context.Context, params request.Ta
 		NoRekening: params.NoRekening,
 	}
 
-	err = service.rekeningRepository.CheckRekening(tx, rekening_)
+	err = service.rekeningRepository.CheckRekening(tracerCtx, tx, rekening_)
 	if err == gorm.ErrRecordNotFound {
 		err = fmt.Errorf("nomor rekening tidak valid")
 		helper.ServiceError(err, service.log)
 		return
 	}
 
-	saldo, err := service.rekeningRepository.GetSaldo(tx, rekening_)
+	saldo, err := service.rekeningRepository.GetSaldo(tracerCtx, tx, rekening_)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -162,7 +172,7 @@ func (service *RekeningServiceImpl) Tarik(ctx context.Context, params request.Ta
 		return
 	}
 
-	err = service.rekeningRepository.UpdateSaldo(tx, rekening_, -params.Nominal)
+	err = service.rekeningRepository.UpdateSaldo(tracerCtx, tx, rekening_, -params.Nominal)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -176,13 +186,13 @@ func (service *RekeningServiceImpl) Tarik(ctx context.Context, params request.Ta
 		Nominal:          params.Nominal,
 	}
 
-	err = service.rekeningRepository.CatatTransaksi(tx, transaksi_)
+	err = service.rekeningRepository.CatatTransaksi(tracerCtx, tx, transaksi_)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
 	}
 
-	saldo, err = service.rekeningRepository.GetSaldo(tx, rekening_)
+	saldo, err = service.rekeningRepository.GetSaldo(tracerCtx, tx, rekening_)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -197,7 +207,7 @@ func (service *RekeningServiceImpl) Tarik(ctx context.Context, params request.Ta
 		TanggalTransaksi: time.Now().Format("01-02-2006"),
 	}
 
-	err = service.RedisService.Publish(ctx, service.redis_, "journal", dataRedis)
+	err = service.RedisService.Publish(ctx, tracerCtx, service.redis_, "journal", dataRedis)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -211,7 +221,7 @@ func (service *RekeningServiceImpl) Tarik(ctx context.Context, params request.Ta
 		TanggalTransaksi: time.Now().Format("01-02-2006"),
 	}
 
-	err = service.RedisService.Publish(ctx, service.redis_, "mutasi", dataRedisMutasi)
+	err = service.RedisService.Publish(ctx, tracerCtx, service.redis_, "mutasi", dataRedisMutasi)
 	if err != nil {
 		helper.ServiceError(err, service.log)
 		return
@@ -223,6 +233,9 @@ func (service *RekeningServiceImpl) Tarik(ctx context.Context, params request.Ta
 }
 
 func (s *RekeningServiceImpl) Transfer(ctx context.Context, params request.TransaksiRequest) (resp response.TransferResponse, err error) {
+	tracerCtx, span := s.tracer.Start(ctx, "RekeningServiceImpl/Transfer", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", params))))
+	defer span.End()
+
 	s.log.Info(logrus.Fields{}, params, "TRANSAKSI TRANSFER START")
 	err = s.validate.Struct(params)
 	if err != nil {
@@ -237,7 +250,7 @@ func (s *RekeningServiceImpl) Transfer(ctx context.Context, params request.Trans
 	rekeningAsal := entity.Rekening{
 		NoRekening: params.NoRekeningAsal,
 	}
-	err = s.rekeningRepository.CheckRekening(tx, rekeningAsal)
+	err = s.rekeningRepository.CheckRekening(tracerCtx, tx, rekeningAsal)
 	if err == gorm.ErrRecordNotFound {
 		err = fmt.Errorf("nomor rekening asal tidak valid")
 		helper.ServiceError(err, s.log)
@@ -247,14 +260,14 @@ func (s *RekeningServiceImpl) Transfer(ctx context.Context, params request.Trans
 	rekeningTujuan := entity.Rekening{
 		NoRekening: params.NoRekeningTujuan,
 	}
-	err = s.rekeningRepository.CheckRekening(tx, rekeningTujuan)
+	err = s.rekeningRepository.CheckRekening(tracerCtx, tx, rekeningTujuan)
 	if err == gorm.ErrRecordNotFound {
 		err = fmt.Errorf("nomor rekening tujuan tidak valid")
 		helper.ServiceError(err, s.log)
 		return
 	}
 
-	saldoRekeningAsal, err := s.rekeningRepository.GetSaldo(tx, rekeningAsal)
+	saldoRekeningAsal, err := s.rekeningRepository.GetSaldo(tracerCtx, tx, rekeningAsal)
 	if err != nil {
 		helper.ServiceError(err, s.log)
 		return
@@ -266,13 +279,13 @@ func (s *RekeningServiceImpl) Transfer(ctx context.Context, params request.Trans
 		return
 	}
 
-	err = s.rekeningRepository.UpdateSaldo(tx, rekeningAsal, -params.Nominal)
+	err = s.rekeningRepository.UpdateSaldo(tracerCtx, tx, rekeningAsal, -params.Nominal)
 	if err != nil {
 		helper.ServiceError(err, s.log)
 		return
 	}
 
-	err = s.rekeningRepository.UpdateSaldo(tx, rekeningTujuan, params.Nominal)
+	err = s.rekeningRepository.UpdateSaldo(tracerCtx, tx, rekeningTujuan, params.Nominal)
 	if err != nil {
 		helper.ServiceError(err, s.log)
 		return
@@ -286,13 +299,13 @@ func (s *RekeningServiceImpl) Transfer(ctx context.Context, params request.Trans
 		Nominal:          params.Nominal,
 	}
 
-	err = s.rekeningRepository.CatatTransaksi(tx, transaksi_)
+	err = s.rekeningRepository.CatatTransaksi(tracerCtx, tx, transaksi_)
 	if err != nil {
 		helper.ServiceError(err, s.log)
 		return
 	}
 
-	saldoRekeningAsal, err = s.rekeningRepository.GetSaldo(tx, rekeningAsal)
+	saldoRekeningAsal, err = s.rekeningRepository.GetSaldo(tracerCtx, tx, rekeningAsal)
 	if err != nil {
 		helper.ServiceError(err, s.log)
 		return
@@ -309,7 +322,7 @@ func (s *RekeningServiceImpl) Transfer(ctx context.Context, params request.Trans
 		TanggalTransaksi: time.Now().Format("01-02-2006"),
 	}
 
-	err = s.RedisService.Publish(ctx, s.redis_, "journal", dataRedis)
+	err = s.RedisService.Publish(ctx, tracerCtx, s.redis_, "journal", dataRedis)
 	if err != nil {
 		helper.ServiceError(err, s.log)
 		return
@@ -320,7 +333,10 @@ func (s *RekeningServiceImpl) Transfer(ctx context.Context, params request.Trans
 	return
 }
 
-func (s *RekeningServiceImpl) GetSaldo(noRekening string) (resp response.GetSaldo, err error) {
+func (s *RekeningServiceImpl) GetSaldo(ctx context.Context, noRekening string) (resp response.GetSaldo, err error) {
+	tracerCtx, span := s.tracer.Start(ctx, "RekeningServiceImpl/GetSaldo", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", noRekening))))
+	defer span.End()
+
 	s.log.Info(logrus.Fields{}, noRekening, "GET SALDO START")
 
 	tx := s.db.Begin()
@@ -331,7 +347,7 @@ func (s *RekeningServiceImpl) GetSaldo(noRekening string) (resp response.GetSald
 		NoRekening: noRekening,
 	}
 
-	saldo, err := s.rekeningRepository.GetSaldo(tx, rekeningAsal)
+	saldo, err := s.rekeningRepository.GetSaldo(tracerCtx, tx, rekeningAsal)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			err = fmt.Errorf("nomor rekening tidak valid")
