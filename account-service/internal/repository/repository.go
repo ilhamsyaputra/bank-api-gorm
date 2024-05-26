@@ -10,6 +10,7 @@ type Repository struct {
 	NasabahRepository
 	RekeningRepository
 	TransaksiRepository
+	LoginRepository
 	db     *gorm.DB
 	log    *logger.Logger
 	tracer trace.Tracer
@@ -19,6 +20,7 @@ func InitRepository(db *gorm.DB, log *logger.Logger, tracer trace.Tracer) *Repos
 	nasabahRepository := InitNasabahRepositoryImpl(db, log, tracer)
 	rekeningRepository := InitRekeningRepositoryImpl(db, log, tracer)
 	transaksiRepository := InitTransaksiRepositoryImpl(db, log, tracer)
+	loginRepository := InitLoginRepositoryImpl(db, log, tracer)
 
 	return &Repository{
 		db:     db,
@@ -28,5 +30,6 @@ func InitRepository(db *gorm.DB, log *logger.Logger, tracer trace.Tracer) *Repos
 		NasabahRepository:   nasabahRepository,
 		RekeningRepository:  rekeningRepository,
 		TransaksiRepository: transaksiRepository,
+		LoginRepository:     loginRepository,
 	}
 }

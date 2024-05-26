@@ -38,6 +38,11 @@ func (s *Server) Start(logger *logger.Logger) {
 	routes.Get("/saldo/:no_rekening", authorization, s.controller.CekSaldo)
 	routes.Get("/mutasi/:no_rekening", authorization, s.controller.GetMutasi)
 
+	routesv2 := app.Group("/v2")
+	routesv2.Post("/login", s.controller.LoginV2)
+	routesv2.Post("/login/verify-otp", s.controller.VerifyOtp)
+	routesv2.Post("/login/verify-pin", s.controller.VerifyPin)
+
 	err := app.Listen(":20025")
 	if err != nil {
 		panic(err)

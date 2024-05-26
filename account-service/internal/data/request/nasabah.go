@@ -28,3 +28,17 @@ type LoginRequest struct {
 	NoNasabah string `json:"no_nasabah" validate:"required"`
 	Pin       string `json:"pin" validate:"required"`
 }
+
+type LoginV2Request struct {
+	NoHp string `json:"no_hp" validate:"required"`
+}
+
+type VerifyOtpRequest struct {
+	NoHp    string `json:"no_hp" validate:"required"`
+	KodeOtp string `json:"kode_otp" validate:"required"`
+}
+
+type VerifyPinRequest struct {
+	NoNasabah string `json:"no_nasabah" validate:"required"`
+	Pin       string `json:"pin" validate:"required"`
+}

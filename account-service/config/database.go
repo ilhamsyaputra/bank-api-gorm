@@ -37,6 +37,7 @@ func InitDatabase(viper *viper.Viper, log *logger.Logger) *gorm.DB {
 		&entity.Rekening{},
 		&entity.Transaksi{},
 		&entity.Counter{},
+		&entity.Otp{},
 	)
 
 	if err == nil && db.Migrator().HasTable(&entity.Enum{}) {

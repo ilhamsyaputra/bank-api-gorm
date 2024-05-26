@@ -7,7 +7,7 @@ import (
 )
 
 func TransactionStatusHandler(db *gorm.DB, err *error, logger *logger.Logger) error {
-	if *err != nil {
+	if *err != nil && (*err).Error() != "verifikasi gagal, OTP tidak tepat" {
 		db.Rollback()
 		logger.Error(logrus.Fields{"error": (*err).Error()}, nil, "PROCESS FAILED, ROLLBACK OCCURED")
 		return *err
