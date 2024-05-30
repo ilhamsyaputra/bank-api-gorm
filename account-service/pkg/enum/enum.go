@@ -15,3 +15,17 @@ var TipeTransaksi = struct {
 	Kredit: "C",
 	Debit:  "D",
 }
+
+var Status = struct {
+	Error   string
+	Success string
+}{
+	Error:   "error",
+	Success: "success",
+}
+
+var Remark = struct {
+	InternalServerError string
+}{
+	InternalServerError: "terjadi kesalahan pada sistem, harap hubungi technical support",
+}

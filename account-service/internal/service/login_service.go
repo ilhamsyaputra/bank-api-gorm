@@ -23,7 +23,7 @@ import (
 type LoginService interface {
 	LoginV2(context.Context, request.LoginV2Request) error
 	VerifyOtp(context.Context, request.VerifyOtpRequest) (entity.Nasabah, error)
-	VerifyPin(ctx context.Context, params request.LoginRequest) (result response.LoginResponse, err error)
+	VerifyPin(context.Context, request.LoginRequest) (response.LoginResponse, error)
 }
 
 type LoginServiceImpl struct {
@@ -45,7 +45,7 @@ func InitLoginServiceImp(db *gorm.DB, repo repository.LoginRepository, validate 
 }
 
 func (s *LoginServiceImpl) LoginV2(ctx context.Context, params request.LoginV2Request) (err error) {
-	tracerCtx, span := s.tracer.Start(ctx, "LoginServiceImpl/LoginV2", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", params))))
+	newCtx, span := s.tracer.Start(ctx, "LoginServiceImpl/LoginV2", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", params))))
 	defer span.End()
 
 	s.log.Info(logrus.Fields{}, params, "LOGIN START")
@@ -63,7 +63,7 @@ func (s *LoginServiceImpl) LoginV2(ctx context.Context, params request.LoginV2Re
 	nasabah_ := entity.Nasabah{
 		NoHp: params.NoHp,
 	}
-	err = s.repository.CheckNoHp(tracerCtx, tx, nasabah_)
+	err = s.repository.CheckNoHp(newCtx, tx, nasabah_)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			err = fmt.Errorf("tidak dapat melakukan login, user tidak ditemukan")
@@ -75,7 +75,7 @@ func (s *LoginServiceImpl) LoginV2(ctx context.Context, params request.LoginV2Re
 	otp := entity.Otp{
 		NoHp: params.NoHp,
 	}
-	err = s.repository.CheckOtpData(tracerCtx, tx, otp)
+	err = s.repository.CheckOtpData(newCtx, tx, otp)
 	if err != nil {
 		if err != gorm.ErrRecordNotFound {
 			err = fmt.Errorf("terjadi kesalahan")
@@ -84,13 +84,13 @@ func (s *LoginServiceImpl) LoginV2(ctx context.Context, params request.LoginV2Re
 
 		if err == gorm.ErrRecordNotFound {
 			otp.KodeOtp = strconv.Itoa(otp_.GenerateOtp())
-			if errs := s.repository.GenerateOtp(tracerCtx, tx, otp); errs != nil {
+			if errs := s.repository.GenerateOtp(newCtx, tx, otp); errs != nil {
 				return
 			}
 		}
 	}
 
-	err = s.repository.UpdateOtp(tracerCtx, tx, otp)
+	err = s.repository.UpdateOtp(newCtx, tx, otp)
 
 	defer s.log.Info(logrus.Fields{}, nil, "LOGIN END")
 
@@ -98,7 +98,7 @@ func (s *LoginServiceImpl) LoginV2(ctx context.Context, params request.LoginV2Re
 }
 
 func (s *LoginServiceImpl) VerifyOtp(ctx context.Context, params request.VerifyOtpRequest) (result entity.Nasabah, err error) {
-	tracerCtx, span := s.tracer.Start(ctx, "LoginServiceImpl/VerifyOtp", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", params))))
+	newCtx, span := s.tracer.Start(ctx, "LoginServiceImpl/VerifyOtp", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", params))))
 	defer span.End()
 
 	s.log.Info(logrus.Fields{}, params, "LOGIN START")
@@ -117,7 +117,7 @@ func (s *LoginServiceImpl) VerifyOtp(ctx context.Context, params request.VerifyO
 		NoHp:    params.NoHp,
 		KodeOtp: params.KodeOtp,
 	}
-	otpData, err := s.repository.VerifyOtp(tracerCtx, tx, otp)
+	otpData, err := s.repository.VerifyOtp(newCtx, tx, otp)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			err = fmt.Errorf("data tidak ditemukan, harap untuk request OTP kembali")
@@ -138,7 +138,7 @@ func (s *LoginServiceImpl) VerifyOtp(ctx context.Context, params request.VerifyO
 	}
 
 	if otpData.KodeOtp != otp.KodeOtp {
-		err = s.repository.UpdateOtpBatasCoba(tracerCtx, tx, otp)
+		err = s.repository.UpdateOtpBatasCoba(newCtx, tx, otp)
 		err = fmt.Errorf("verifikasi gagal, OTP tidak tepat")
 		return
 	}
@@ -146,7 +146,7 @@ func (s *LoginServiceImpl) VerifyOtp(ctx context.Context, params request.VerifyO
 	nasabah_ := entity.Nasabah{
 		NoHp: params.NoHp,
 	}
-	result, err = s.repository.GetNasabah(tracerCtx, tx, nasabah_)
+	result, err = s.repository.GetNasabah(newCtx, tx, nasabah_)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			err = fmt.Errorf("tidak dapat melakukan login, user tidak ditemukan")
@@ -161,7 +161,7 @@ func (s *LoginServiceImpl) VerifyOtp(ctx context.Context, params request.VerifyO
 }
 
 func (s *LoginServiceImpl) VerifyPin(ctx context.Context, params request.LoginRequest) (result response.LoginResponse, err error) {
-	tracerCtx, span := s.tracer.Start(ctx, "LoginServiceImpl/VerifyOtp", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", params))))
+	newCtx, span := s.tracer.Start(ctx, "LoginServiceImpl/VerifyOtp", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", params))))
 	defer span.End()
 
 	s.log.Info(logrus.Fields{}, params, "LOGIN START")
@@ -184,7 +184,7 @@ func (s *LoginServiceImpl) VerifyPin(ctx context.Context, params request.LoginRe
 			db:                s.db,
 			tracer:            s.tracer,
 		},
-		tracerCtx,
+		newCtx,
 		params,
 	)
 

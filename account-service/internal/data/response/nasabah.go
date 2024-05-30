@@ -3,24 +3,24 @@ package response
 import "time"
 
 type DaftarResponse struct {
-	NoNasabah  string
-	NoRekening string
+	NoNasabah  string `json:"no_nasabah"`
+	NoRekening string `json:"no_rekening"`
 }
 
 type TabungResponse struct {
-	Saldo float64
+	Saldo float64 `json:"saldo"`
 }
 
 type TarikResponse struct {
-	Saldo float64
+	Saldo float64 `json:"saldo"`
 }
 
 type TransferResponse struct {
-	Saldo float64
+	Saldo float64 `json:"saldo"`
 }
 
 type GetSaldo struct {
-	Saldo float64
+	Saldo float64 `json:"saldo"`
 }
 
 type GetMutasi struct {
@@ -30,5 +30,5 @@ type GetMutasi struct {
 }
 
 type LoginResponse struct {
-	Token string
+	Token string `json:"token"`
 }

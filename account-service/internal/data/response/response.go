@@ -1,8 +1,8 @@
 package response
 
 type Response struct {
-	Code   int
-	Status string
-	Remark string
-	Data   interface{}
+	Code   int         `json:"code"`
+	Status string      `json:"status"`
+	Remark string      `json:"remark"`
+	Data   interface{} `json:"data"`
 }

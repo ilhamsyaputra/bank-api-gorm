@@ -1,36 +1,34 @@
 package controller
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/data/request"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/data/response"
 	"github.com/ilhamsyaputra/bank-api-gorm/internal/service"
-	"github.com/ilhamsyaputra/bank-api-gorm/pkg/helper"
+	"github.com/ilhamsyaputra/bank-api-gorm/pkg/enum"
 	"github.com/ilhamsyaputra/bank-api-gorm/pkg/logger"
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type LoginController struct {
 	service service.LoginService
-	ctx     context.Context
 	logger  *logger.Logger
 	tracer  trace.Tracer
 }
 
-func InitLoginController(ctx context.Context, service service.LoginService, logger *logger.Logger, tracer trace.Tracer) *LoginController {
+func InitLoginController(service service.LoginService, logger *logger.Logger, tracer trace.Tracer) *LoginController {
 	return &LoginController{
 		service: service,
-		ctx:     ctx,
 		logger:  logger,
 		tracer:  tracer,
 	}
 }
 
 func (c *LoginController) LoginV2(ctx *fiber.Ctx) (err error) {
-	tracerCtx, span := c.tracer.Start(c.ctx, "LoginController/Login")
+	newCtx, span := c.tracer.Start(ctx.Context(), "LoginController/Login")
 	defer span.End()
 
 	request_ := request.LoginV2Request{}
@@ -38,16 +36,22 @@ func (c *LoginController) LoginV2(ctx *fiber.Ctx) (err error) {
 
 	err = ctx.BodyParser(&request_)
 	if err != nil {
-		helper.ControllerError(err, c.logger)
-		return
+		c.logger.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Controller")
+
+		response_ = response.Response{
+			Code:   fiber.StatusInternalServerError,
+			Status: enum.Status.Error,
+			Remark: enum.Remark.InternalServerError,
+		}
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response_)
 	}
 
-	err = c.service.LoginV2(tracerCtx, request_)
+	err = c.service.LoginV2(newCtx, request_)
 	if err != nil {
-		helper.ControllerError(err, c.logger)
+		c.logger.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Controller")
 		response_ = response.Response{
-			Code:   http.StatusBadRequest,
-			Status: "error",
+			Code:   fiber.StatusBadRequest,
+			Status: enum.Status.Error,
 			Remark: err.Error(),
 		}
 		return ctx.Status(fiber.StatusBadRequest).JSON(response_)
@@ -55,7 +59,7 @@ func (c *LoginController) LoginV2(ctx *fiber.Ctx) (err error) {
 
 	response_ = response.Response{
 		Code:   http.StatusCreated,
-		Status: "success",
+		Status: enum.Status.Success,
 		Remark: "request otp berhasil",
 	}
 
@@ -63,7 +67,7 @@ func (c *LoginController) LoginV2(ctx *fiber.Ctx) (err error) {
 }
 
 func (c *LoginController) VerifyOtp(ctx *fiber.Ctx) (err error) {
-	tracerCtx, span := c.tracer.Start(c.ctx, "LoginController/VerifyOtp")
+	newCtx, span := c.tracer.Start(ctx.Context(), "LoginController/VerifyOtp")
 	defer span.End()
 
 	request_ := request.VerifyOtpRequest{}
@@ -71,16 +75,22 @@ func (c *LoginController) VerifyOtp(ctx *fiber.Ctx) (err error) {
 
 	err = ctx.BodyParser(&request_)
 	if err != nil {
-		helper.ControllerError(err, c.logger)
-		return
+		c.logger.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Controller")
+
+		response_ = response.Response{
+			Code:   fiber.StatusInternalServerError,
+			Status: enum.Status.Error,
+			Remark: enum.Remark.InternalServerError,
+		}
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response_)
 	}
 
-	result, err := c.service.VerifyOtp(tracerCtx, request_)
+	result, err := c.service.VerifyOtp(newCtx, request_)
 	if err != nil {
-		helper.ControllerError(err, c.logger)
+		c.logger.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Controller")
 		response_ = response.Response{
 			Code:   http.StatusBadRequest,
-			Status: "error",
+			Status: enum.Status.Error,
 			Remark: err.Error(),
 		}
 		return ctx.Status(fiber.StatusBadRequest).JSON(response_)
@@ -98,7 +108,7 @@ func (c *LoginController) VerifyOtp(ctx *fiber.Ctx) (err error) {
 
 	response_ = response.Response{
 		Code:   http.StatusCreated,
-		Status: "success",
+		Status: enum.Status.Success,
 		Remark: "verifikasi otp berhasil",
 		Data:   responseData,
 	}
@@ -107,7 +117,7 @@ func (c *LoginController) VerifyOtp(ctx *fiber.Ctx) (err error) {
 }
 
 func (c *LoginController) VerifyPin(ctx *fiber.Ctx) (err error) {
-	tracerCtx, span := c.tracer.Start(c.ctx, "LoginController/VerifyPin")
+	newCtx, span := c.tracer.Start(ctx.Context(), "LoginController/VerifyPin")
 	defer span.End()
 
 	request_ := request.LoginRequest{}
@@ -115,16 +125,23 @@ func (c *LoginController) VerifyPin(ctx *fiber.Ctx) (err error) {
 
 	err = ctx.BodyParser(&request_)
 	if err != nil {
-		helper.ControllerError(err, c.logger)
-		return
+		c.logger.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Controller")
+
+		response_ = response.Response{
+			Code:   fiber.StatusInternalServerError,
+			Status: enum.Status.Error,
+			Remark: enum.Remark.InternalServerError,
+		}
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response_)
 	}
 
-	result, err := c.service.VerifyPin(tracerCtx, request_)
+	result, err := c.service.VerifyPin(newCtx, request_)
 	if err != nil {
-		helper.ControllerError(err, c.logger)
+		c.logger.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Controller")
+
 		response_ = response.Response{
-			Code:   http.StatusBadRequest,
-			Status: "error",
+			Code:   fiber.StatusBadRequest,
+			Status: enum.Status.Error,
 			Remark: err.Error(),
 		}
 		return ctx.Status(fiber.StatusBadRequest).JSON(response_)
@@ -132,7 +149,7 @@ func (c *LoginController) VerifyPin(ctx *fiber.Ctx) (err error) {
 
 	response_ = response.Response{
 		Code:   http.StatusCreated,
-		Status: "success",
+		Status: enum.Status.Success,
 		Remark: "verifikasi pin berhasil",
 		Data:   result,
 	}

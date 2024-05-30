@@ -16,10 +16,10 @@ type Controller struct {
 }
 
 func InitController(ctx context.Context, service *service.Service, logger *logger.Logger, tracer trace.Tracer) *Controller {
-	nasabahController := InitNasabahController(ctx, service.NasabahService, logger, tracer)
+	nasabahController := InitNasabahController(service.NasabahService, logger, tracer)
 	rekeningController := InitRekeningController(ctx, service, logger, tracer)
-	transaksiController := InitTransaksiController(ctx, service, logger, tracer)
-	loginController := InitLoginController(ctx, service.LoginService, logger, tracer)
+	transaksiController := InitTransaksiController(service, logger, tracer)
+	loginController := InitLoginController(service.LoginService, logger, tracer)
 
 	return &Controller{
 		NasabahController:   *nasabahController,
