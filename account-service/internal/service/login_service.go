@@ -68,7 +68,7 @@ func (s *LoginServiceImpl) LoginV2(ctx context.Context, params request.LoginV2Re
 		if err == gorm.ErrRecordNotFound {
 			err = fmt.Errorf("tidak dapat melakukan login, user tidak ditemukan")
 		}
-		helper.ServiceError(err, s.log)
+		s.log.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Service")
 		return
 	}
 
@@ -151,7 +151,7 @@ func (s *LoginServiceImpl) VerifyOtp(ctx context.Context, params request.VerifyO
 		if err == gorm.ErrRecordNotFound {
 			err = fmt.Errorf("tidak dapat melakukan login, user tidak ditemukan")
 		}
-		helper.ServiceError(err, s.log)
+		s.log.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Service")
 		return
 	}
 

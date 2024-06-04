@@ -56,7 +56,7 @@ func (s *TransaksiServiceImpl) GetMutasi(ctx context.Context, noRekening string)
 
 	result, err := s.transaksiRepository.GetMutasi(newCtx, tx, rekening)
 	if err != nil {
-		helper.ServiceError(err, s.log)
+		s.log.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Service")
 		return
 	}
 

@@ -44,24 +44,24 @@ func InitNasabahRepositoryImpl(db *gorm.DB, repo repository.NasabahRepository, v
 	}
 }
 
-func (service *NasabahServiceImpl) Daftar(ctx context.Context, nasabah request.DaftarRequest) (resp response.DaftarResponse, err error) {
-	newCtx, span := service.tracer.Start(ctx, "NasabahServiceImpl/Daftar", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", nasabah))))
+func (s *NasabahServiceImpl) Daftar(ctx context.Context, nasabah request.DaftarRequest) (resp response.DaftarResponse, err error) {
+	newCtx, span := s.tracer.Start(ctx, "NasabahServiceImpl/Daftar", trace.WithAttributes(attribute.String("params", fmt.Sprintf("%+v", nasabah))))
 	defer span.End()
 
-	service.log.Info(logrus.Fields{}, nasabah, "Daftar Nasabah START")
-	err = service.validate.Struct(nasabah)
+	s.log.Info(logrus.Fields{}, nasabah, "Daftar Nasabah START")
+	err = s.validate.Struct(nasabah)
 	if err != nil {
-		service.log.Info(logrus.Fields{"error": err.Error()}, nasabah, "ERROR on Daftar()")
+		s.log.Info(logrus.Fields{"error": err.Error()}, nasabah, "ERROR on Daftar()")
 		return
 	}
 
-	tx := service.db.Begin()
+	tx := s.db.Begin()
 
-	defer helper.TransactionStatusHandler(tx, &err, service.log)
+	defer helper.TransactionStatusHandler(tx, &err, s.log)
 
 	hashedPin, err := helper.Hash(nasabah.Pin)
 	if err != nil {
-		helper.ServiceError(err, service.log)
+		s.log.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Service")
 		return
 	}
 
@@ -73,26 +73,26 @@ func (service *NasabahServiceImpl) Daftar(ctx context.Context, nasabah request.D
 		KodeCabang: nasabah.KodeCabang,
 	}
 
-	validateUser := service.nasabahRepository.ValidateNewUser(newCtx, tx, nasabahModel)
+	validateUser := s.nasabahRepository.ValidateNewUser(newCtx, tx, nasabahModel)
 	if validateUser.RowsAffected != 0 {
 		err = fmt.Errorf("tidak dapat melakukan registrasi. data nik atau no_hp sudah terdaftar di sistem")
-		helper.ServiceError(err, service.log)
+		s.log.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Service")
 		return
 	}
 
-	noNasabahCounter := service.nasabahRepository.GetNoNasabah(newCtx, tx)
+	noNasabahCounter := s.nasabahRepository.GetNoNasabah(newCtx, tx)
 	noNasabah := nasabah.KodeCabang + helper.Zfill(noNasabahCounter, "0", 6)
 	nasabahModel.NoNasabah = noNasabah
 
-	err = service.nasabahRepository.DaftarNasabah(newCtx, tx, nasabahModel)
+	err = s.nasabahRepository.DaftarNasabah(newCtx, tx, nasabahModel)
 	if err != nil {
-		helper.ServiceError(err, service.log)
+		s.log.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Service")
 		return
 	}
 
 	// registrasi rekening
 	BANK_CODE_FILLER := "99"
-	noRekeningCounter := service.nasabahRepository.GetNoRekening(newCtx, tx)
+	noRekeningCounter := s.nasabahRepository.GetNoRekening(newCtx, tx)
 	noRekening := BANK_CODE_FILLER + nasabah.KodeCabang + helper.Zfill(noRekeningCounter, "0", 8)
 
 	rekening := entity.Rekening{
@@ -100,17 +100,17 @@ func (service *NasabahServiceImpl) Daftar(ctx context.Context, nasabah request.D
 		NoRekening: noRekening,
 	}
 
-	err = service.nasabahRepository.DaftarRekening(newCtx, tx, rekening)
+	err = s.nasabahRepository.DaftarRekening(newCtx, tx, rekening)
 	if err != nil {
-		helper.ServiceError(err, service.log)
+		s.log.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Service")
 		return
 	}
 
 	// update counter
-	service.nasabahRepository.UpdateNoNasabah(newCtx, tx)
-	service.nasabahRepository.UpdateNoRekening(newCtx, tx)
+	s.nasabahRepository.UpdateNoNasabah(newCtx, tx)
+	s.nasabahRepository.UpdateNoRekening(newCtx, tx)
 
-	defer service.log.Info(logrus.Fields{}, noRekening, "Daftar Nasabah END")
+	defer s.log.Info(logrus.Fields{}, noRekening, "Daftar Nasabah END")
 
 	return response.DaftarResponse{NoNasabah: noNasabah, NoRekening: noRekening}, nil
 }
@@ -141,14 +141,14 @@ func (s *NasabahServiceImpl) Login(ctx context.Context, params request.LoginRequ
 		if err == gorm.ErrRecordNotFound {
 			err = fmt.Errorf("tidak dapat melakukan login, user tidak ditemukan")
 		}
-		helper.ServiceError(err, s.log)
+		s.log.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Service")
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(result.Pin), []byte(params.Pin))
 	if err != nil {
+		s.log.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Service")
 		err = fmt.Errorf("tidak dapat melakukan login, pin tidak tepat")
-		helper.ServiceError(err, s.log)
 		return
 	}
 
@@ -165,7 +165,7 @@ func (s *NasabahServiceImpl) Login(ctx context.Context, params request.LoginRequ
 	// generate encoded token
 	token_, err := token.SignedString([]byte(JWT_SECRET))
 	if err != nil {
-		helper.ServiceError(err, s.log)
+		s.log.Error(logrus.Fields{"error": err}, err.Error(), "ERROR on Service")
 		err = fmt.Errorf("terjadi kesalahan! harap hubungi technical support")
 		return
 	}
